@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TIMIA · Data Governance Canvas</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-0:#08080f;--bg-1:#0f0f1e;--bg-2:#161627;--bg-3:#1e1e35;--bg-4:#252542;
+  --accent:#7c6ff7;--accent-2:#a78bfa;--accent-glow:rgba(124,111,247,.35);
+  --green:#10b981;--amber:#f59e0b;--red:#ef4444;--cyan:#06b6d4;
+  --text-1:#f0f0ff;--text-2:#a0a0cc;--text-3:#606080;
+  --border:rgba(124,111,247,.18);--radius:14px;
+  --sidebar-w:240px;--sidebar-collapsed:68px;--topbar-h:62px;
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg-0);color:var(--text-1);min-height:100vh;overflow-x:hidden}
+button{cursor:pointer;border:none;outline:none}
+a{color:inherit;text-decoration:none}
+input,textarea{outline:none}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg-1)}
+::-webkit-scrollbar-thumb{background:var(--bg-4);border-radius:6px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;height:100vh;width:var(--sidebar-w);background:var(--bg-1);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width .3s cubic-bezier(.4,0,.2,1);z-index:100;overflow:hidden}
+.sidebar.collapsed{width:var(--sidebar-collapsed)}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);min-height:var(--topbar-h);flex-shrink:0}
+.timia-icon{width:36px;height:36px;flex-shrink:0;border-radius:10px;background:linear-gradient(135deg,#6d28d9,#0ea5e9);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(109,40,217,.5);overflow:hidden}
+.timia-icon svg{width:22px;height:22px}
+.timia-wordmark{display:flex;flex-direction:column;gap:1px;white-space:nowrap;overflow:hidden}
+.timia-wordmark .t1{font-size:15px;font-weight:800;letter-spacing:.06em;background:linear-gradient(90deg,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.timia-wordmark .t2{font-size:9px;font-weight:500;color:var(--text-3);letter-spacing:.10em}
+.sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto;overflow-x:hidden}
+.nav-section-title{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--text-3);padding:8px 12px 4px;white-space:nowrap;overflow:hidden;transition:opacity .2s}
+.sidebar.collapsed .nav-section-title{opacity:0}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all .2s;position:relative;white-space:nowrap;margin-bottom:2px}
+.nav-item:hover{background:var(--bg-3)}
+.nav-item.active{background:linear-gradient(135deg,rgba(124,111,247,.25),rgba(6,182,212,.1));box-shadow:inset 0 0 0 1px var(--border)}
+.nav-item.active .nav-icon{color:var(--accent-2)}
+.nav-item.active .nav-label{color:var(--text-1);font-weight:600}
+.nav-icon{font-size:18px;flex-shrink:0;color:var(--text-2);transition:color .2s}
+.nav-label{font-size:13.5px;color:var(--text-2);transition:color .2s;overflow:hidden}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;background:var(--accent);color:white;padding:2px 7px;border-radius:20px;flex-shrink:0}
+.sidebar.collapsed .nav-label,.sidebar.collapsed .nav-badge{display:none}
+.sidebar.collapsed .nav-item::after{content:attr(data-label);position:absolute;left:calc(var(--sidebar-collapsed) + 8px);background:var(--bg-3);color:var(--text-1);padding:6px 12px;border-radius:8px;font-size:13px;white-space:nowrap;opacity:0;pointer-events:none;border:1px solid var(--border);transition:opacity .2s;z-index:200}
+.sidebar.collapsed .nav-item:hover::after{opacity:1}
+.sidebar-footer{padding:12px 8px;border-top:1px solid var(--border);flex-shrink:0}
+.sidebar-toggle{width:100%;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;background:transparent;color:var(--text-2);font-size:13.5px;transition:all .2s}
+.sidebar-toggle:hover{background:var(--bg-3);color:var(--text-1)}
+.sidebar-toggle .toggle-icon{font-size:18px;flex-shrink:0;transition:transform .3s}
+.sidebar.collapsed .toggle-icon{transform:rotate(180deg)}
+.sidebar.collapsed .toggle-label{display:none}
+
+/* MAIN */
+.main-wrapper{margin-left:var(--sidebar-w);transition:margin-left .3s cubic-bezier(.4,0,.2,1);min-height:100vh;display:flex;flex-direction:column}
+.main-wrapper.collapsed{margin-left:var(--sidebar-collapsed)}
+.topbar{height:var(--topbar-h);background:var(--bg-1);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:0 24px;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:16px;font-weight:700;flex:1}
+.topbar-title span{color:var(--accent-2)}
+.search-bar{display:flex;align-items:center;gap:8px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:7px 14px;width:260px;transition:all .2s}
+.search-bar:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.search-bar input{background:transparent;border:none;color:var(--text-1);font-size:13.5px;width:100%}
+.search-bar input::placeholder{color:var(--text-3)}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.topbar-btn{width:36px;height:36px;border-radius:10px;background:var(--bg-2);border:1px solid var(--border);color:var(--text-2);font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative}
+.topbar-btn:hover{background:var(--bg-3);color:var(--text-1);border-color:var(--accent)}
+.topbar-btn .notif-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;background:var(--red);border-radius:50%;border:2px solid var(--bg-1)}
+.user-avatar{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 0 12px var(--accent-glow)}
+
+/* PAGES */
+.page-content{flex:1;padding:28px;display:none;animation:fadeIn .3s ease}
+.page-content.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:28px}
+.page-title{font-size:22px;font-weight:700;margin-bottom:6px}
+.page-subtitle{color:var(--text-2);font-size:14px}
+.card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s}
+.card:hover{border-color:rgba(124,111,247,.35)}
+.grid{display:grid;gap:16px}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.04em}
+.badge-purple{background:rgba(124,111,247,.15);color:var(--accent-2);border:1px solid rgba(124,111,247,.3)}
+.badge-green{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.badge-amber{background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+.badge-cyan{background:rgba(6,182,212,.15);color:#67e8f9;border:1px solid rgba(6,182,212,.3)}
+.badge-red{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+
+/* STAT CARDS */
+.stat-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;transition:all .25s}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card.purple::before{background:linear-gradient(90deg,var(--accent),var(--cyan))}
+.stat-card.green::before{background:linear-gradient(90deg,var(--green),#34d399)}
+.stat-card.amber::before{background:linear-gradient(90deg,var(--amber),#fcd34d)}
+.stat-card.cyan::before{background:linear-gradient(90deg,var(--cyan),#a5f3fc)}
+.stat-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.stat-header{display:flex;align-items:center;justify-content:space-between}
+.stat-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.stat-icon.purple{background:rgba(124,111,247,.15)}
+.stat-icon.green{background:rgba(16,185,129,.15)}
+.stat-icon.amber{background:rgba(245,158,11,.15)}
+.stat-icon.cyan{background:rgba(6,182,212,.15)}
+.stat-change{font-size:12px;font-weight:600}
+.stat-change.up{color:var(--green)}
+.stat-value{font-size:32px;font-weight:800;line-height:1}
+.stat-label{font-size:13px;color:var(--text-2)}
+
+/* PROCESS FLOW (linear, homepage) */
+.flow-container{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;overflow-x:auto}
+.flow-title{font-size:15px;font-weight:700;margin-bottom:20px;color:var(--accent-2)}
+.flow-steps{display:flex;align-items:stretch;gap:0;min-width:680px}
+.flow-step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;cursor:pointer}
+.flow-step-box{
+  background:var(--bg-3);border:1px solid var(--border);border-radius:10px;
+  padding:12px 8px;text-align:center;width:100%;font-size:11.5px;font-weight:600;
+  color:var(--text-2);transition:all .2s;position:relative;z-index:1;
+  min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+}
+.flow-step:hover .flow-step-box{background:var(--bg-4);border-color:var(--accent);color:var(--text-1);transform:scale(1.05)}
+.flow-step-icon{font-size:20px;line-height:1}
+.flow-step-num{width:20px;height:20px;border-radius:50%;background:var(--accent);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;position:absolute;top:-8px;right:-4px;z-index:2}
+.flow-connector{height:2px;flex:0 0 18px;background:linear-gradient(90deg,var(--accent),var(--cyan));position:relative;align-self:center}
+.flow-connector::after{content:'›';position:absolute;right:-5px;top:50%;transform:translateY(-50%);color:var(--cyan);font-size:14px}
+
+/* TAB GROUP */
+.tab-group{display:flex;gap:4px;background:var(--bg-2);padding:4px;border-radius:12px;border:1px solid var(--border);width:fit-content;margin-bottom:24px}
+.tab-btn{padding:8px 20px;border-radius:9px;font-size:13.5px;font-weight:500;background:transparent;color:var(--text-2);transition:all .2s}
+.tab-btn.active{background:var(--accent);color:white;font-weight:600;box-shadow:0 4px 14px var(--accent-glow)}
+.tab-btn:hover:not(.active){background:var(--bg-3);color:var(--text-1)}
+
+/* CYCLICAL FLUJO DIAGRAM */
+.flujo-wrap{position:relative}
+.cycle-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;color:#fcd34d;margin-bottom:16px}
+.cycle-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2)}
+.leg-arrow-fwd{width:24px;height:2px;background:linear-gradient(90deg,var(--accent),var(--cyan));position:relative;display:inline-block}
+.leg-arrow-fwd::after{content:'›';position:absolute;right:-6px;top:50%;transform:translateY(-50%);color:var(--cyan);font-size:12px}
+.leg-arrow-back{width:24px;height:2px;background:var(--amber);position:relative;display:inline-block;border-style:dashed}
+.leg-arrow-back::before{content:'‹';position:absolute;left:-6px;top:50%;transform:translateY(-50%);color:var(--amber);font-size:12px}
+
+.flujo-steps-wrap{overflow-x:auto;padding-bottom:12px}
+.flujo-cycle-row{display:flex;align-items:flex-start;gap:0;min-width:780px;position:relative}
+
+.flujo-step-col{flex:1;display:flex;flex-direction:column;align-items:center;position:relative}
+.fstep-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:white;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:6px;z-index:2;position:relative;flex-shrink:0}
+.fstep-box{
+  background:var(--bg-3);border:1px solid var(--border);border-radius:10px;
+  padding:12px 10px;text-align:center;font-size:11.5px;font-weight:600;
+  color:var(--text-2);transition:all .2s;cursor:pointer;width:100%;
+  min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px
+}
+.fstep-box:hover{background:rgba(124,111,247,.15);border-color:var(--accent);color:var(--accent-2)}
+.fstep-box.active{background:linear-gradient(135deg,rgba(124,111,247,.25),rgba(6,182,212,.1));border-color:var(--accent);color:var(--accent-2)}
+.fstep-icon{font-size:18px;line-height:1}
+
+/* arrows between cols */
+.fcol-connector{flex:0 0 28px;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:20px}
+.fwd-arrow{width:100%;height:2px;background:linear-gradient(90deg,var(--accent),var(--cyan));position:relative}
+.fwd-arrow::after{content:'›';position:absolute;right:-5px;top:50%;transform:translateY(-50%);color:var(--cyan);font-size:14px;line-height:1}
+.back-arrow{width:100%;height:1.5px;background:var(--amber);position:relative;opacity:.7}
+.back-arrow::before{content:'‹';position:absolute;left:-5px;top:50%;transform:translateY(-50%);color:var(--amber);font-size:14px;line-height:1}
+
+/* lane label on left */
+.flujo-lane-block{margin-bottom:20px}
+.lane-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-left:2px}
+.lane-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.lane-title{font-size:12px;font-weight:700;color:var(--text-2)}
+
+/* TOOLS */
+.tools-header{display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.tools-search{flex:1;min-width:200px;display:flex;align-items:center;gap:10px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:10px 16px;transition:all .2s}
+.tools-search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.tools-search input{background:none;border:none;color:var(--text-1);font-size:14px;flex:1}
+.tools-search input::placeholder{color:var(--text-3)}
+.filter-chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg-3);color:var(--text-2);border:1px solid var(--border);cursor:pointer;transition:all .2s}
+.chip:hover{border-color:var(--accent);color:var(--accent-2)}
+.chip.active{background:rgba(124,111,247,.2);color:var(--accent-2);border-color:var(--accent)}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.tool-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:all .25s;cursor:pointer}
+.tool-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.tool-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.tool-name{font-size:14px;font-weight:700}
+.tool-cat-icon{font-size:22px}
+.tool-desc{font-size:12.5px;color:var(--text-2);margin-bottom:12px;line-height:1.5}
+.tool-footer{display:flex;align-items:center;gap:8px}
+.copy-btn{display:flex;align-items:center;gap:6px;background:rgba(124,111,247,.15);color:var(--accent-2);border:1px solid rgba(124,111,247,.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;transition:all .2s}
+.copy-btn:hover{background:rgba(124,111,247,.3)}
+.env-tag{font-size:11px;padding:3px 8px;border-radius:6px;background:var(--bg-3);color:var(--text-3);margin-left:auto}
+.empty-state{text-align:center;padding:48px 24px;color:var(--text-3)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-title{font-size:16px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+.empty-desc{font-size:13.5px}
+
+/* RCN SEMANTIC SEARCH */
+.rcn-hero{background:linear-gradient(135deg,rgba(124,111,247,.12),rgba(6,182,212,.08));border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px}
+.rcn-hero-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.rcn-hero-sub{font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:16px}
+.rcn-how{display:flex;gap:20px;flex-wrap:wrap}
+.rcn-step{display:flex;align-items:flex-start;gap:10px}
+.rcn-step-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:white;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rcn-step-text{font-size:12.5px;color:var(--text-2);line-height:1.5}
+.rcn-step-text strong{color:var(--text-1)}
+
+.rcn-search-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px}
+.rcn-input-label{font-size:12px;font-weight:600;color:var(--text-2);letter-spacing:.06em;margin-bottom:8px}
+.rcn-textarea{width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--text-1);font-size:14px;line-height:1.6;resize:none;min-height:90px;font-family:inherit;transition:all .2s;margin-bottom:14px}
+.rcn-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.rcn-textarea::placeholder{color:var(--text-3)}
+.rcn-opts{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.rcn-opt-group{display:flex;align-items:center;gap:8px}
+.rcn-opt-label{font-size:12px;color:var(--text-3);font-weight:600}
+.rcn-toggle{display:flex;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.rcn-toggle button{padding:6px 14px;font-size:12px;font-weight:600;background:transparent;color:var(--text-2);transition:all .2s}
+.rcn-toggle button.on{background:var(--accent);color:white}
+.rcn-search-btn{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--cyan));color:white;border-radius:12px;padding:12px 28px;font-size:14px;font-weight:700;transition:all .2s;box-shadow:0 4px 18px var(--accent-glow)}
+.rcn-search-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--accent-glow)}
+.rcn-search-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* RESULT BANNER */
+.rcn-banner{border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;animation:fadeIn .4s ease}
+.rcn-banner.alto{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.35)}
+.rcn-banner.medio{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35)}
+.rcn-banner.bajo{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.35)}
+.rcn-banner.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35)}
+.rcn-banner-icon{font-size:28px;flex-shrink:0}
+.rcn-banner-text h4{font-size:15px;font-weight:700;margin-bottom:3px}
+.rcn-banner-text p{font-size:13px;color:var(--text-2)}
+.rcn-banner.alto .rcn-banner-text h4{color:#34d399}
+.rcn-banner.medio .rcn-banner-text h4{color:#fcd34d}
+.rcn-banner.bajo .rcn-banner-text h4{color:var(--accent-2)}
+
+/* RESULT CARDS */
+.rcn-result-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:12px;transition:all .2s;position:relative;overflow:hidden}
+.rcn-result-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.rcn-result-card.rank-1::before{background:linear-gradient(180deg,var(--green),#34d399)}
+.rcn-result-card.rank-other::before{background:var(--border)}
+.rcn-result-card:hover{border-color:rgba(124,111,247,.4);transform:translateX(3px)}
+.rcn-result-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.rcn-result-names{}
+.rcn-lname-sp{font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:3px}
+.rcn-lname-en{font-size:11.5px;color:var(--text-3)}
+.rcn-result-score{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.score-pct{font-size:22px;font-weight:800}
+.score-pct.high{color:var(--green)}
+.score-pct.med{color:var(--amber)}
+.score-pct.low{color:var(--accent-2)}
+.score-bar-wrap{width:80px;height:6px;background:var(--bg-4);border-radius:6px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:6px;transition:width .6s ease}
+.score-bar-fill.high{background:linear-gradient(90deg,var(--green),#34d399)}
+.score-bar-fill.med{background:linear-gradient(90deg,var(--amber),#fcd34d)}
+.score-bar-fill.low{background:linear-gradient(90deg,var(--accent),var(--cyan))}
+
+.rcn-desc{font-size:12.5px;color:var(--text-2);line-height:1.6;margin-bottom:14px;padding:10px 12px;background:var(--bg-3);border-radius:8px}
+.rcn-result-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rcn-physical{display:flex;align-items:center;gap:6px;background:rgba(124,111,247,.1);border:1px solid rgba(124,111,247,.25);border-radius:8px;padding:5px 10px}
+.rcn-physical-lbl{font-size:10px;color:var(--text-3);font-weight:600;letter-spacing:.06em}
+.rcn-physical-val{font-size:12px;font-weight:700;color:var(--accent-2);font-family:'Courier New',monospace}
+.rcn-compat{font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px}
+.rcn-compat.Alto{background:rgba(16,185,129,.15);color:#34d399}
+.rcn-compat.Medio{background:rgba(245,158,11,.15);color:#fcd34d}
+.rcn-compat.Bajo{background:rgba(239,68,68,.15);color:#fca5a5}
+
+/* SPINNING LOADER */
+.spin{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MODELO SDM */
+.sdm-pyramid{display:flex;flex-direction:column;align-items:center;gap:8px;margin:24px 0}
+.pyramid-level{border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;text-align:center;transition:all .2s;cursor:pointer;padding:14px}
+.pyramid-level:hover{filter:brightness(1.2);transform:scaleX(1.03)}
+.pyr-1{width:180px;background:linear-gradient(135deg,#3b1fa3,#5b2d9e);color:#c4b5fd;box-shadow:0 0 24px rgba(124,111,247,.3)}
+.pyr-2{width:280px;background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:#93c5fd}
+.pyr-3{width:380px;background:linear-gradient(135deg,#0c4a6e,#0369a1);color:#7dd3fc}
+.pyr-4{width:480px;background:linear-gradient(135deg,#065f46,#047857);color:#6ee7b7}
+.pyr-5{width:580px;background:linear-gradient(135deg,#713f12,#92400e);color:#fcd34d}
+.sdm-objectives{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.obj-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;text-align:center;transition:all .25s}
+.obj-card:hover{border-color:var(--accent);transform:translateY(-3px)}
+.obj-icon{font-size:30px;margin-bottom:10px}
+.obj-title{font-size:13.5px;font-weight:700;margin-bottom:6px}
+.obj-desc{font-size:12px;color:var(--text-2);line-height:1.5}
+
+/* BUENAS PRACTICAS */
+.accordion-item{margin-bottom:10px}
+.accordion-header{display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;cursor:pointer;transition:all .2s;user-select:none}
+.accordion-header:hover{border-color:var(--accent);background:var(--bg-3)}
+.accordion-header.open{border-color:var(--accent);border-radius:var(--radius) var(--radius) 0 0}
+.accordion-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:10px}
+.accordion-chevron{font-size:16px;color:var(--text-3);transition:transform .3s}
+.accordion-header.open .accordion-chevron{transform:rotate(180deg)}
+.accordion-body{display:none;background:var(--bg-2);border:1px solid var(--accent);border-top:0;border-radius:0 0 var(--radius) var(--radius);padding:20px}
+.accordion-body.open{display:block;animation:fadeIn .2s ease}
+.checklist-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+.checklist-item:last-child{border-bottom:none}
+.check-icon{color:var(--green);flex-shrink:0;font-size:16px;margin-top:1px}
+.suffix-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:16px}
+.suffix-table th{background:var(--bg-3);color:var(--accent-2);padding:10px 14px;text-align:left;font-size:11px;letter-spacing:.08em;border-bottom:1px solid var(--border)}
+.suffix-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text-2)}
+.suffix-table tr:hover td{background:var(--bg-3);color:var(--text-1)}
+.suffix-table code{background:rgba(124,111,247,.15);color:var(--accent-2);padding:2px 8px;border-radius:6px;font-size:12px;font-family:'Courier New',monospace}
+
+/* PROGRESS BAR */
+.progress-bar{height:6px;background:var(--bg-4);border-radius:6px;overflow:hidden;margin-top:10px}
+.progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--cyan));transition:width .5s ease}
+
+/* AI CHAT */
+.chat-bubble{position:fixed;bottom:28px;right:28px;z-index:1000}
+.chat-toggle-btn{width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--cyan));box-shadow:0 6px 28px var(--accent-glow);display:flex;align-items:center;justify-content:center;font-size:26px;transition:all .3s;cursor:pointer;border:none}
+.chat-toggle-btn:hover{transform:scale(1.1);box-shadow:0 10px 40px var(--accent-glow)}
+.chat-toggle-btn .close-icon{display:none}
+.chat-toggle-btn.open .chat-icon{display:none}
+.chat-toggle-btn.open .close-icon{display:block}
+.chat-panel{position:absolute;bottom:72px;right:0;width:360px;background:var(--bg-1);border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.5);display:none;flex-direction:column;overflow:hidden;max-height:520px}
+.chat-panel.open{display:flex;animation:chatSlideUp .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes chatSlideUp{from{opacity:0;transform:translateY(20px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.chat-header{background:linear-gradient(135deg,var(--accent),var(--cyan));padding:16px 18px;display:flex;align-items:center;gap:12px}
+.chat-avatar{width:38px;height:38px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px}
+.chat-header-info h4{font-size:14px;font-weight:700}
+.chat-header-info p{font-size:12px;opacity:.85}
+.status-dot{width:7px;height:7px;background:#4ade80;border-radius:50%;animation:pulse 2s infinite;display:inline-block;margin-right:4px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;max-height:320px}
+.msg{display:flex;gap:8px}
+.msg.user{flex-direction:row-reverse}
+.msg-bubble{max-width:82%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5}
+.msg.bot .msg-bubble{background:var(--bg-3);color:var(--text-1);border-radius:4px 14px 14px 14px}
+.msg.user .msg-bubble{background:linear-gradient(135deg,var(--accent),#9333ea);color:white;border-radius:14px 4px 14px 14px}
+.msg-icon{font-size:20px;flex-shrink:0;align-self:flex-end}
+.chat-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}
+.suggestion-chip{background:rgba(124,111,247,.15);border:1px solid rgba(124,111,247,.3);color:var(--accent-2);padding:5px 12px;border-radius:20px;font-size:11.5px;cursor:pointer;transition:all .2s}
+.suggestion-chip:hover{background:rgba(124,111,247,.3)}
+.chat-input-row{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--border)}
+.chat-input{flex:1;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text-1);font-size:13px;resize:none}
+.chat-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.send-btn{width:40px;height:40px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .2s;flex-shrink:0;align-self:flex-end}
+.send-btn:hover{background:var(--accent-2);transform:scale(1.05)}
+.typing{display:flex;gap:4px;padding:10px 14px}
+.typing span{width:7px;height:7px;background:var(--text-3);border-radius:50%;animation:bounce .8s infinite}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+
+/* TOAST */
+.toast{position:fixed;top:80px;right:24px;z-index:2000;background:var(--bg-2);border:1px solid var(--green);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 30px rgba(0,0,0,.3);opacity:0;transform:translateX(20px);transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(0)}
+.toast-icon{font-size:20px}
+.toast-text{font-size:13.5px;font-weight:500}
+
+/* flujo node (quick access panel) */
+.flujo-node{background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.flujo-node:hover{background:rgba(124,111,247,.15);border-color:var(--accent);color:var(--accent-2);transform:scale(1.02)}
+.flujo-node.active-node{background:linear-gradient(135deg,rgba(124,111,247,.25),rgba(6,182,212,.1));border-color:var(--accent);color:var(--accent-2)}
+
+/* STEP DETAIL PANEL */
+.step-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s}
+.step-overlay.open{opacity:1;pointer-events:all}
+.step-panel{position:fixed;right:0;top:0;height:100vh;width:420px;max-width:95vw;background:var(--bg-1);border-left:1px solid var(--border);z-index:201;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column}
+.step-panel.open{transform:translateX(0)}
+.step-panel-header{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-shrink:0;background:var(--bg-2);position:sticky;top:0;z-index:1}
+.sp-close{width:32px;height:32px;border-radius:8px;background:var(--bg-3);color:var(--text-2);font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;cursor:pointer;border:none}
+.sp-close:hover{background:rgba(239,68,68,.2);color:#fca5a5}
+.sp-step-tag{font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:.1em;margin-bottom:6px}
+.sp-title{font-size:16px;font-weight:800;color:var(--text-1);line-height:1.3}
+.step-panel-body{flex:1;padding:22px;display:flex;flex-direction:column;gap:18px}
+.sp-actor-wrap{display:flex;align-items:center;gap:10px}
+.sp-actor-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700}
+.sp-section-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--text-3);padding-bottom:8px;border-bottom:1px solid var(--border);text-transform:uppercase}
+.sp-desc{font-size:13px;color:var(--text-2);line-height:1.75;background:var(--bg-2);border-radius:10px;padding:14px 16px;border:1px solid var(--border)}
+.contact-card{display:flex;align-items:center;gap:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;transition:all .2s}
+.contact-card:hover{border-color:rgba(124,111,247,.35)}
+.contact-avatar{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.contact-info{flex:1;min-width:0}
+.contact-name{font-size:13px;font-weight:700;color:var(--text-1)}
+.contact-role{font-size:11px;color:var(--text-3);margin-top:1px}
+.contact-copy-btn{background:rgba(124,111,247,.15);border:1px solid rgba(124,111,247,.3);color:var(--accent-2);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;transition:all .2s;cursor:pointer;white-space:nowrap}
+.contact-copy-btn:hover{background:rgba(124,111,247,.3)}
+.copy-all-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(124,111,247,.1);border:1px dashed rgba(124,111,247,.3);color:var(--accent-2);border-radius:10px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.copy-all-btn:hover{background:rgba(124,111,247,.2)}
+.sp-tip{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--text-2);padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sp-tip:last-child{border-bottom:none}
+.sp-tip-dot{color:var(--amber);flex-shrink:0;font-size:10px;margin-top:5px}
+.sp-next-box{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(124,111,247,.1),rgba(6,182,212,.06));border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text-2)}
+.sp-next-box strong{color:var(--accent-2)}
+
+/* BPMN SWIMLANE FLOW */
+.bpmn-flow{display:flex;flex-direction:column}
+.bpmn-step-row{display:flex;align-items:stretch;min-height:64px}
+.bpmn-lane-col{width:120px;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;padding-right:12px}
+.lane-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:12px;font-size:9px;font-weight:800;letter-spacing:.04em;text-align:center;line-height:1.35;max-width:110px;word-break:break-word}
+.bpmn-spine{width:24px;flex-shrink:0;display:flex;flex-direction:column;align-items:center}
+.bpmn-dot{width:12px;height:12px;border-radius:50%;background:var(--accent);flex-shrink:0;z-index:2;margin-top:26px;box-shadow:0 0 8px var(--accent-glow)}
+.bpmn-line{width:2px;background:linear-gradient(180deg,var(--accent),rgba(124,111,247,.25));flex:1}
+.bpmn-line-top{width:2px;background:linear-gradient(180deg,rgba(124,111,247,.25),var(--accent));flex:1}
+.bpmn-step-content{flex:1;padding:8px 0 8px 12px;display:flex;align-items:center}
+.bstep-box{flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:13px 42px 13px 14px;cursor:pointer;transition:all .2s;position:relative;display:flex;align-items:center;gap:11px}
+.bstep-box:hover{border-color:var(--accent);background:rgba(124,111,247,.08);transform:translateX(4px)}
+.bstep-box::after{content:'›';position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--accent-2);font-size:18px;opacity:.5;transition:opacity .2s}
+.bstep-box:hover::after{opacity:1}
+.bstep-num{width:28px;height:28px;border-radius:8px;color:white;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bstep-text-wrap{flex:1}
+.bstep-name{font-size:13px;font-weight:600;color:var(--text-1)}
+.bstep-sub{font-size:11px;color:var(--text-3);margin-top:2px}
+
+/* DECISION NODES */
+.bpmn-decision-row{display:flex;align-items:stretch;min-height:72px}
+.bpmn-decision-content{flex:1;padding:8px 0 8px 12px;display:flex;align-items:center;margin-left:144px}
+.decision-box{flex:1;background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.3);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .2s}
+.decision-box:hover{border-color:var(--amber);background:rgba(245,158,11,.13)}
+.decision-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.decision-diamond-icon{font-size:20px;line-height:1;color:var(--amber)}
+.decision-q{font-size:13px;font-weight:700;color:#fcd34d}
+.decision-branches{display:flex;gap:10px;flex-wrap:wrap}
+.branch-yes{display:flex;align-items:center;gap:5px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:7px;padding:5px 11px;font-size:11.5px;font-weight:600;color:#34d399}
+.branch-no{display:flex;align-items:center;gap:5px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:7px;padding:5px 11px;font-size:11.5px;font-weight:600;color:#fca5a5}
+
+/* CHALLENGE GAME */
+.challenge-header{background:linear-gradient(135deg,rgba(124,111,247,.14),rgba(6,182,212,.08));border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.challenge-header-left h2{font-size:20px;font-weight:800;margin-bottom:4px}
+.challenge-header-left p{font-size:13px;color:var(--text-2)}
+.challenge-progress{display:flex;align-items:center;gap:8px}
+.progress-orb{width:40px;height:40px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-3);transition:all .4s;position:relative}
+.progress-orb.done{background:linear-gradient(135deg,var(--accent),var(--cyan));border-color:var(--accent);color:white}
+.progress-orb.active{border-color:var(--amber);color:var(--amber);box-shadow:0 0 10px rgba(245,158,11,.4);animation:orbPulse 1.8s infinite}
+@keyframes orbPulse{0%,100%{box-shadow:0 0 10px rgba(245,158,11,.4)}50%{box-shadow:0 0 18px rgba(245,158,11,.6)}}
+.challenge-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:26px;margin-bottom:18px;animation:fadeIn .35s ease}
+.ch-num{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--text-3);margin-bottom:10px;text-transform:uppercase}
+.ch-legacy-block{background:var(--bg-3);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:16px;margin-bottom:14px}
+.ch-legacy-tag{font-size:9.5px;font-weight:800;letter-spacing:.12em;color:var(--amber);text-transform:uppercase;margin-bottom:5px}
+.ch-legacy-name{font-family:'Courier New',monospace;font-size:13.5px;font-weight:700;color:#fcd34d;margin-bottom:8px;word-break:break-all}
+.ch-legacy-desc{font-size:13px;color:var(--text-2);line-height:1.65}
+.ch-hint{display:flex;align-items:flex-start;gap:8px;background:rgba(124,111,247,.07);border:1px solid rgba(124,111,247,.2);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--text-2);margin-bottom:20px}
+.ch-input-label{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text-2);margin-bottom:8px;text-transform:uppercase}
+.ch-input{width:100%;background:var(--bg-3);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--text-1);font-size:14px;font-family:'Courier New',monospace;transition:all .2s;margin-bottom:16px}
+.ch-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);outline:none}
+.ch-input::placeholder{color:var(--text-3);font-family:'Inter',sans-serif;font-size:13px}
+.ch-submit{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--cyan));color:white;border-radius:12px;padding:12px 28px;font-size:14px;font-weight:700;transition:all .2s;box-shadow:0 4px 16px var(--accent-glow);border:none;cursor:pointer}
+.ch-submit:hover{transform:translateY(-2px);box-shadow:0 8px 26px var(--accent-glow)}
+.ch-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.ch-result{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:26px;margin-bottom:18px;animation:fadeIn .4s ease}
+.result-score-center{text-align:center;padding:16px 0 22px}
+.result-stars{font-size:26px;letter-spacing:3px;margin-bottom:6px}
+.result-pct{font-size:52px;font-weight:900;line-height:1;margin-bottom:4px}
+.result-pct.great{color:var(--green)}
+.result-pct.good{color:var(--amber)}
+.result-pct.low{color:var(--accent-2)}
+.result-verdict{font-size:14px;color:var(--text-2)}
+.result-table{background:var(--bg-3);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.rtable-row{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04)}
+.rtable-row:last-child{border-bottom:none}
+.rtable-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-3);min-width:110px;padding-top:2px;text-transform:uppercase}
+.rtable-val{font-size:13px;font-weight:600;color:var(--accent-2);font-family:'Courier New',monospace;word-break:break-all}
+.rtable-val.user-guess{color:var(--text-1)}
+.demo-note{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-3);background:var(--bg-3);border-radius:8px;padding:8px 12px;font-style:italic}
+.ch-next-btn{display:flex;align-items:center;gap:8px;background:var(--bg-3);border:1px solid var(--border);color:var(--text-1);border-radius:12px;padding:12px 24px;font-size:14px;font-weight:600;transition:all .2s;cursor:pointer;margin-top:14px}
+.ch-next-btn:hover{border-color:var(--accent);background:rgba(124,111,247,.1);color:var(--accent-2)}
+.final-screen{text-align:center;padding:40px 20px;animation:fadeIn .5s ease}
+.final-emoji{font-size:60px;margin-bottom:14px}
+.final-score-big{font-size:72px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin-bottom:6px}
+.final-grade{font-size:18px;font-weight:700;margin-bottom:6px}
+.final-sub{font-size:14px;color:var(--text-2);margin-bottom:24px}
+.final-details{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:24px}
+.final-orb{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:12px 18px;text-align:center}
+.final-orb-val{font-size:22px;font-weight:800;color:var(--accent-2)}
+.final-orb-label{font-size:11px;color:var(--text-3)}
+.final-replay{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--cyan));color:white;border-radius:12px;padding:14px 32px;font-size:15px;font-weight:700;cursor:pointer;border:none;transition:all .2s;box-shadow:0 4px 18px var(--accent-glow)}
+.final-replay:hover{transform:translateY(-2px)}
+
+@media(max-width:768px){
+  .sidebar{width:var(--sidebar-collapsed)}
+  .main-wrapper{margin-left:var(--sidebar-collapsed)}
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .grid-3{grid-template-columns:1fr}
+  .sdm-objectives{grid-template-columns:1fr}
+  .chat-panel{width:300px;right:-8px}
+  .search-bar{display:none}
+  .step-panel{width:100vw}
+  .bpmn-lane-col{width:80px}
+  .bpmn-decision-content{margin-left:104px}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="timia-icon">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Geometric mountain peak A — TIMIA brand mark -->
+        <path d="M12 3 L21 20 H3 Z" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M12 3 L18.5 16" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 3 L5.5 16" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round"/>
+        <line x1="7.5" y1="14.5" x2="16.5" y2="14.5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="12" cy="3" r="1.5" fill="white"/>
+      </svg>
+    </div>
+    <div class="timia-wordmark">
+      <div class="t1">TIMIA</div>
+      <div class="t2">DATA GOVERNANCE</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-title">PRINCIPAL</div>
+    <div class="nav-item active" data-page="dashboard" data-label="Dashboard" onclick="navigate('dashboard',this)">
+      <span class="nav-icon">⊞</span><span class="nav-label">Dashboard</span>
+    </div>
+    <div class="nav-item" data-page="flujos" data-label="Flujos de Gobierno" onclick="navigate('flujos',this)">
+      <span class="nav-icon">⇌</span><span class="nav-label">Flujos de Gobierno</span>
+    </div>
+    <div class="nav-item" data-page="herramientas" data-label="Herramientas" onclick="navigate('herramientas',this)">
+      <span class="nav-icon">🔧</span><span class="nav-label">Herramientas</span>
+      <span class="nav-badge">26</span>
+    </div>
+    <div class="nav-item" data-page="ejercicios" data-label="Desafío RCN" onclick="navigate('ejercicios',this)">
+      <span class="nav-icon">🎯</span><span class="nav-label">Desafío RCN</span>
+      <span class="nav-badge" style="background:var(--green)">GAME</span>
+    </div>
+    <div class="nav-section-title" style="margin-top:8px">GOBERNANZA</div>
+    <div class="nav-item" data-page="modelo" data-label="Modelo SDM" onclick="navigate('modelo',this)">
+      <span class="nav-icon">🏗️</span><span class="nav-label">Modelo SDM</span>
+    </div>
+    <div class="nav-item" data-page="practicas" data-label="Buenas Prácticas" onclick="navigate('practicas',this)">
+      <span class="nav-icon">📋</span><span class="nav-label">Buenas Prácticas</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+      <span class="toggle-icon nav-icon">◁</span>
+      <span class="toggle-label">Colapsar</span>
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main-wrapper" id="mainWrapper">
+  <header class="topbar">
+    <div class="topbar-title" id="topbarTitle">Dashboard <span>Overview</span></div>
+    <div class="search-bar">
+      <span style="color:var(--text-3);font-size:16px">🔍</span>
+      <input type="text" placeholder="Buscar en el canvas…" id="globalSearch" oninput="globalSearchFn(this.value)"/>
+    </div>
+    <div class="topbar-actions">
+      <button class="topbar-btn" onclick="showToast('Sin notificaciones pendientes','🔔')">🔔<span class="notif-dot"></span></button>
+      <button class="topbar-btn">⚙️</button>
+      <div class="user-avatar">AJ</div>
+    </div>
+  </header>
+
+  <!-- PAGE: DASHBOARD -->
+  <div class="page-content active" id="page-dashboard">
+    <div class="page-header">
+      <div class="page-title">Bienvenido al <span style="color:var(--accent-2)">Canvas de Gobernanza</span> 👋</div>
+      <div class="page-subtitle">Plataforma TIMIA · Gobierno del dato · TC-015 NextGen v2.7</div>
+    </div>
+    <div class="grid grid-4" style="margin-bottom:24px">
+      <div class="stat-card purple">
+        <div class="stat-header"><div class="stat-icon purple">🔧</div><span class="stat-change up">↑ activas</span></div>
+        <div class="stat-value">26</div><div class="stat-label">Herramientas</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-header"><div class="stat-icon green">⇌</div><span class="stat-change up">Ciclo</span></div>
+        <div class="stat-value">2</div><div class="stat-label">Flujos de gobierno</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-header"><div class="stat-icon amber">🎯</div><span class="stat-change up">GAME</span></div>
+        <div class="stat-value">5</div><div class="stat-label">Desafíos RCN</div>
+      </div>
+      <div class="stat-card cyan">
+        <div class="stat-header"><div class="stat-icon cyan">📋</div><span class="stat-change up">v2.7</span></div>
+        <div class="stat-value">12</div><div class="stat-label">Sufijos catalogados</div>
+      </div>
+    </div>
+    <!-- SDM Flow -->
+    <div class="flow-container" style="margin-bottom:24px">
+      <div class="flow-title">🔄 Flujo del Modelo Global SDM · Información Legacy → ADA</div>
+      <div class="flow-steps">
+        <div class="flow-step" onclick="navigate('modelo',null)">
+          <div class="flow-step-box">
+            <div class="flow-step-icon">📦</div>
+            <span>Información<br>Legacy</span>
+            <div class="flow-step-num">1</div>
+          </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-step">
+          <div class="flow-step-box">
+            <div class="flow-step-icon">📝</div>
+            <span>Pre<br>Diccionario</span>
+            <div class="flow-step-num">2</div>
+          </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-step">
+          <div class="flow-step-box">
+            <div class="flow-step-icon">🏛️</div>
+            <span>Gobierno<br>Funcional</span>
+            <div class="flow-step-num">3</div>
+          </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-step">
+          <div class="flow-step-box">
+            <div class="flow-step-icon">📚</div>
+            <span>Diccionario<br>&nbsp;</span>
+            <div class="flow-step-num">4</div>
+          </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-step">
+          <div class="flow-step-box">
+            <div class="flow-step-icon">⚙️</div>
+            <span>Procesamiento<br>&nbsp;</span>
+            <div class="flow-step-num">5</div>
+          </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-step" onclick="navigate('herramientas',null)">
+          <div class="flow-step-box" style="border-color:var(--cyan);background:rgba(6,182,212,.08)">
+            <div class="flow-step-icon">🚀</div>
+            <span style="color:var(--cyan)">ADA<br>&nbsp;</span>
+            <div class="flow-step-num" style="background:var(--cyan)">6</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:16px">⚡ Acceso Rápido</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="flujo-node active-node" onclick="navigate('ejercicios',null)">🎯 Desafío Semántico RCN</div>
+          <div class="flujo-node" onclick="navigate('practicas',null)">📋 Catálogo de Sufijos TC-015</div>
+          <div class="flujo-node" onclick="navigate('herramientas',null)">🔧 Links de Interés</div>
+          <div class="flujo-node" onclick="navigate('modelo',null)">🏗️ Estructura del Modelo SDM</div>
+          <div class="flujo-node" onclick="navigate('flujos',null)">⇌ Flujos de Gobierno</div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:16px">📦 Categorías de Herramientas</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:13px;color:var(--text-2)">⚡ Procesamiento & Analytics</span><span class="badge badge-purple">5</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:13px;color:var(--text-2)">🏗️ Infraestructura & DevOps</span><span class="badge badge-cyan">5</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:13px;color:var(--text-2)">🔐 Seguridad & Accesos</span><span class="badge badge-amber">4</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:13px;color:var(--text-2)">📄 Documentación & Manuales</span><span class="badge badge-green">7</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+            <span style="font-size:13px;color:var(--text-2)">📑 Formularios & Solicitudes</span><span class="badge badge-red">5</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: FLUJOS -->
+  <div class="page-content" id="page-flujos">
+    <div class="page-header">
+      <div class="page-title">⇌ Flujos de <span style="color:var(--accent-2)">Gobierno</span></div>
+      <div class="page-subtitle">Paso a paso con condicionales · Haz clic en cualquier paso para ver detalles, responsables y contactos</div>
+    </div>
+    <div class="tab-group">
+      <button class="tab-btn active" onclick="switchFlujo('informacional',this)">1.1 Informacional</button>
+      <button class="tab-btn" onclick="switchFlujo('operacional',this)">1.2 Operacional</button>
+    </div>
+
+    <div id="flujo-informacional">
+      <div class="card" style="margin-bottom:20px">
+        <div style="font-size:15px;font-weight:700;color:var(--accent-2);margin-bottom:4px">📘 1.1 Flujo de Gobierno Informacional</div>
+        <div style="font-size:13px;color:var(--text-2);line-height:1.6">Desde la definición de objetos de negocio hasta el cierre y despliegue en ADA. Los nodos en <span style="color:#fcd34d">amarillo</span> son decisiones con rutas Si/No. <strong style="color:var(--accent-2)">Haz clic en cualquier paso</strong> para ver descripción, responsable y contactos a incluir en el correo.</div>
+      </div>
+      <div class="bpmn-flow" id="bpmnInfo">
+
+        <!-- PASO 1 -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(124,111,247,.15);color:#a78bfa;border:1px solid rgba(124,111,247,.3)">🏢 PROYECTO</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot"></div><div class="bpmn-line"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i1')"><div class="bstep-num" style="background:#7c6ff7">1</div><div class="bstep-text-wrap"><div class="bstep-name">Definir Objetos del Negocio</div><div class="bstep-sub">Identificar y documentar los objetos a gobernar</div></div></div></div>
+        </div>
+
+        <!-- PASO 2 -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(124,111,247,.15);color:#a78bfa;border:1px solid rgba(124,111,247,.3)">🏢 PROYECTO</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot"></div><div class="bpmn-line"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i2')"><div class="bstep-num" style="background:#7c6ff7">2</div><div class="bstep-text-wrap"><div class="bstep-name">Presentar en Bizagi</div><div class="bstep-sub">Modelar el flujo en Bizagi y presentar al comité</div></div></div></div>
+        </div>
+
+        <!-- DECISIÓN 1 -->
+        <div class="bpmn-decision-row">
+          <div class="bpmn-spine" style="margin-left:120px"><div class="bpmn-dot" style="background:var(--amber);margin-top:30px;box-shadow:0 0 8px rgba(245,158,11,.5)"></div><div class="bpmn-line" style="background:linear-gradient(180deg,var(--amber),rgba(245,158,11,.2))"></div></div>
+          <div class="bpmn-decision-content"><div class="decision-box" onclick="openStep('id1')"><div class="decision-head"><span class="decision-diamond-icon">◇</span><span class="decision-q">¿Se aprueba la presentación en Bizagi?</span></div><div class="decision-branches"><span class="branch-no">✗ No → Diligenciar fuentes y ajustar</span><span class="branch-yes">✓ Sí → Elaborar Namings</span></div></div></div>
+        </div>
+
+        <!-- PASO 3 (rama No) -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(124,111,247,.15);color:#a78bfa;border:1px solid rgba(124,111,247,.3)">🏢 PROYECTO</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot" style="background:#fca5a5;box-shadow:0 0 8px rgba(239,68,68,.4)"></div><div class="bpmn-line"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i3')" style="border-color:rgba(239,68,68,.3)"><div class="bstep-num" style="background:#ef4444">3a</div><div class="bstep-text-wrap"><div class="bstep-name">Diligenciar Fuentes de Datos</div><div class="bstep-sub">Rama No · Completar fuentes y retornar al paso 2</div></div></div></div>
+        </div>
+
+        <!-- PASO 4 -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(3,105,161,.2);color:#7dd3fc;border:1px solid rgba(3,105,161,.4)">🏛️ GOB. FUNC.</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot" style="background:#0369a1"></div><div class="bpmn-line"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i4')"><div class="bstep-num" style="background:#0369a1">4</div><div class="bstep-text-wrap"><div class="bstep-name">Elaborar Namings</div><div class="bstep-sub">Gobierno Funcional propone nomenclatura TC-015</div></div></div></div>
+        </div>
+
+        <!-- PASO 5 -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(4,120,87,.2);color:#6ee7b7;border:1px solid rgba(4,120,87,.4)">📊 DPM</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot" style="background:#047857"></div><div class="bpmn-line"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i5')"><div class="bstep-num" style="background:#047857">5</div><div class="bstep-text-wrap"><div class="bstep-name">Validar Pre-Diccionarios</div><div class="bstep-sub">DPM revisa coherencia del Pre-Dic propuesto</div></div></div></div>
+        </div>
+
+        <!-- DECISIÓN 2 -->
+        <div class="bpmn-decision-row">
+          <div class="bpmn-spine" style="margin-left:120px"><div class="bpmn-dot" style="background:var(--amber);margin-top:30px;box-shadow:0 0 8px rgba(245,158,11,.5)"></div><div class="bpmn-line" style="background:linear-gradient(180deg,var(--amber),rgba(245,158,11,.2))"></div></div>
+          <div class="bpmn-decision-content"><div class="decision-box" onclick="openStep('id2')"><div class="decision-head"><span class="decision-diamond-icon">◇</span><span class="decision-q">¿Se aprueba el Pre-Diccionario?</span></div><div class="decision-branches"><span class="branch-no">✗ No → Regresa al paso 4 (ajustar Namings)</span><span class="branch-yes">✓ Sí → Registrar en Nexus</span></div></div></div>
+        </div>
+
+        <!-- PASO 6 -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(4,120,87,.2);color:#6ee7b7;border:1px solid rgba(4,120,87,.4)">📊 DPM</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot" style="background:#047857"></div><div class="bpmn-line"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i6')"><div class="bstep-num" style="background:#047857">6</div><div class="bstep-text-wrap"><div class="bstep-name">Registrar en Nexus</div><div class="bstep-sub">Registrar los objetos aprobados en Nexus / DATUM</div></div></div></div>
+        </div>
+
+        <!-- PASO 7 -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(14,165,233,.15);color:#38bdf8;border:1px solid rgba(14,165,233,.3)">⚙️ GOB. TÉC.</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot" style="background:#0ea5e9"></div><div class="bpmn-line"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i7')"><div class="bstep-num" style="background:#0ea5e9">7</div><div class="bstep-text-wrap"><div class="bstep-name">Validar Objetos</div><div class="bstep-sub">Gobierno Técnico valida integridad y coherencia técnica</div></div></div></div>
+        </div>
+
+        <!-- PASO 8 -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(3,105,161,.2);color:#7dd3fc;border:1px solid rgba(3,105,161,.4)">🏛️ GOB. FUNC.</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot" style="background:#0369a1"></div><div class="bpmn-line"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i8')"><div class="bstep-num" style="background:#0369a1">8</div><div class="bstep-text-wrap"><div class="bstep-name">Realizar Propuesta de Diccionarios</div><div class="bstep-sub">Elaborar versión completa del Diccionario de Datos</div></div></div></div>
+        </div>
+
+        <!-- PASO 9 -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(14,165,233,.15);color:#38bdf8;border:1px solid rgba(14,165,233,.3)">⚙️ GOB. TÉC.</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot" style="background:#0ea5e9"></div><div class="bpmn-line"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i9')"><div class="bstep-num" style="background:#0ea5e9">9</div><div class="bstep-text-wrap"><div class="bstep-name">Validar Diccionarios (Técnico)</div><div class="bstep-sub">Revisión técnica de esquemas, tipos y relaciones</div></div></div></div>
+        </div>
+
+        <!-- DECISIÓN 3 -->
+        <div class="bpmn-decision-row">
+          <div class="bpmn-spine" style="margin-left:120px"><div class="bpmn-dot" style="background:var(--amber);margin-top:30px;box-shadow:0 0 8px rgba(245,158,11,.5)"></div><div class="bpmn-line" style="background:linear-gradient(180deg,var(--amber),rgba(245,158,11,.2))"></div></div>
+          <div class="bpmn-decision-content"><div class="decision-box" onclick="openStep('id3')"><div class="decision-head"><span class="decision-diamond-icon">◇</span><span class="decision-q">¿Aprueba Gobierno Técnico?</span></div><div class="decision-branches"><span class="branch-no">✗ No → Ajustar diccionarios (regresa paso 8)</span><span class="branch-yes">✓ Sí → Validar en Arquitectura</span></div></div></div>
+        </div>
+
+        <!-- PASO 10 -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(109,40,217,.2);color:#c4b5fd;border:1px solid rgba(109,40,217,.4)">🏗️ ARQ. LOCAL</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot" style="background:#6d28d9"></div><div class="bpmn-line"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i10')"><div class="bstep-num" style="background:#6d28d9">10</div><div class="bstep-text-wrap"><div class="bstep-name">Validar Diccionarios (Arquitectura)</div><div class="bstep-sub">Revisión de arquitectura local y modelos de datos</div></div></div></div>
+        </div>
+
+        <!-- DECISIÓN 4 -->
+        <div class="bpmn-decision-row">
+          <div class="bpmn-spine" style="margin-left:120px"><div class="bpmn-dot" style="background:var(--amber);margin-top:30px;box-shadow:0 0 8px rgba(245,158,11,.5)"></div><div class="bpmn-line" style="background:linear-gradient(180deg,var(--amber),rgba(245,158,11,.2))"></div></div>
+          <div class="bpmn-decision-content"><div class="decision-box" onclick="openStep('id4')"><div class="decision-head"><span class="decision-diamond-icon">◇</span><span class="decision-q">¿Aprueba Arquitectura Local?</span></div><div class="decision-branches"><span class="branch-no">✗ No → Ajustar (regresa paso 8)</span><span class="branch-yes">✓ Sí → Verificar Namings nuevos</span></div></div></div>
+        </div>
+
+        <!-- DECISIÓN 5 -->
+        <div class="bpmn-decision-row">
+          <div class="bpmn-spine" style="margin-left:120px"><div class="bpmn-dot" style="background:var(--amber);margin-top:30px;box-shadow:0 0 8px rgba(245,158,11,.5)"></div><div class="bpmn-line" style="background:linear-gradient(180deg,var(--amber),rgba(245,158,11,.2))"></div></div>
+          <div class="bpmn-decision-content"><div class="decision-box" onclick="openStep('id5')"><div class="decision-head"><span class="decision-diamond-icon">◇</span><span class="decision-q">¿Existen Namings nuevos?</span></div><div class="decision-branches"><span class="branch-yes">✓ Sí → Etiquetar en Seguridad</span><span class="branch-no">✗ No → Cerrar y Desplegar</span></div></div></div>
+        </div>
+
+        <!-- PASO 11 (rama Sí) -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.3)">🔐 SEGURIDAD</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot" style="background:#dc2626"></div><div class="bpmn-line"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i11')"><div class="bstep-num" style="background:#dc2626">11</div><div class="bstep-text-wrap"><div class="bstep-name">Etiquetar Namings (Seguridad)</div><div class="bstep-sub">Clasificación de seguridad y etiquetas de confidencialidad</div></div></div></div>
+        </div>
+
+        <!-- PASO 12 - FINAL -->
+        <div class="bpmn-step-row">
+          <div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(124,111,247,.15);color:#a78bfa;border:1px solid rgba(124,111,247,.3)">🏢 PROYECTO</span></div>
+          <div class="bpmn-spine"><div class="bpmn-dot" style="background:var(--cyan);box-shadow:0 0 12px rgba(6,182,212,.5)"></div></div>
+          <div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('i12')" style="border-color:var(--cyan);background:rgba(6,182,212,.06)"><div class="bstep-num" style="background:var(--cyan)">12</div><div class="bstep-text-wrap"><div class="bstep-name" style="color:var(--cyan)">Cerrar y Desplegar en ADA</div><div class="bstep-sub">Cierre formal del proceso · Deploy de esquemas</div></div></div></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FLUJO OPERACIONAL -->
+    <div id="flujo-operacional" style="display:none">
+      <div class="card" style="margin-bottom:20px">
+        <div style="font-size:15px;font-weight:700;color:var(--green);margin-bottom:4px">📗 1.2 Flujo de Gobierno Operacional</div>
+        <div style="font-size:13px;color:var(--text-2);line-height:1.6">Desde el levantamiento de necesidades hasta el registro en el RCN y despliegue en ADA. <strong style="color:var(--accent-2)">Haz clic en cualquier paso</strong> para ver descripción, responsable y contactos.</div>
+      </div>
+      <div class="bpmn-flow">
+        <div class="bpmn-step-row"><div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(124,111,247,.15);color:#a78bfa;border:1px solid rgba(124,111,247,.3)">🏢 PROYECTO</span></div><div class="bpmn-spine"><div class="bpmn-dot"></div><div class="bpmn-line"></div></div><div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('o1')"><div class="bstep-num" style="background:#7c6ff7">1</div><div class="bstep-text-wrap"><div class="bstep-name">Levantamiento de Necesidades</div><div class="bstep-sub">Identificar campos requeridos con el equipo funcional</div></div></div></div></div>
+        <div class="bpmn-decision-row"><div class="bpmn-spine" style="margin-left:120px"><div class="bpmn-dot" style="background:var(--amber);margin-top:30px;box-shadow:0 0 8px rgba(245,158,11,.5)"></div><div class="bpmn-line" style="background:linear-gradient(180deg,var(--amber),rgba(245,158,11,.2))"></div></div><div class="bpmn-decision-content"><div class="decision-box" onclick="openStep('od1')"><div class="decision-head"><span class="decision-diamond-icon">◇</span><span class="decision-q">¿Existen campos similares en el RCN?</span></div><div class="decision-branches"><span class="branch-yes">✓ Sí → Reutilizar campos existentes</span><span class="branch-no">✗ No → Proponer Namings nuevos</span></div></div></div></div>
+        <div class="bpmn-step-row"><div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(124,111,247,.15);color:#a78bfa;border:1px solid rgba(124,111,247,.3)">🏢 PROYECTO</span></div><div class="bpmn-spine"><div class="bpmn-dot" style="background:#34d399;box-shadow:0 0 8px rgba(16,185,129,.4)"></div><div class="bpmn-line"></div></div><div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('o2')" style="border-color:rgba(16,185,129,.3)"><div class="bstep-num" style="background:#10b981">2a</div><div class="bstep-text-wrap"><div class="bstep-name">Reutilizar Campos Existentes</div><div class="bstep-sub">Rama Sí · Mapear el campo legacy al nombre RCN existente</div></div></div></div></div>
+        <div class="bpmn-step-row"><div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(3,105,161,.2);color:#7dd3fc;border:1px solid rgba(3,105,161,.4)">🏛️ GOB. FUNC.</span></div><div class="bpmn-spine"><div class="bpmn-dot" style="background:#0369a1"></div><div class="bpmn-line"></div></div><div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('o3')"><div class="bstep-num" style="background:#0369a1">3</div><div class="bstep-text-wrap"><div class="bstep-name">Proponer Namings Nuevos</div><div class="bstep-sub">Rama No · Gobierno Funcional elabora naming según TC-015</div></div></div></div></div>
+        <div class="bpmn-step-row"><div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(14,165,233,.15);color:#38bdf8;border:1px solid rgba(14,165,233,.3)">⚙️ GOB. TÉC.</span></div><div class="bpmn-spine"><div class="bpmn-dot" style="background:#0ea5e9"></div><div class="bpmn-line"></div></div><div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('o4')"><div class="bstep-num" style="background:#0ea5e9">4</div><div class="bstep-text-wrap"><div class="bstep-name">Revisar y Aprobar Namings</div><div class="bstep-sub">Gobierno Técnico valida coherencia y formato TC-015</div></div></div></div></div>
+        <div class="bpmn-decision-row"><div class="bpmn-spine" style="margin-left:120px"><div class="bpmn-dot" style="background:var(--amber);margin-top:30px;box-shadow:0 0 8px rgba(245,158,11,.5)"></div><div class="bpmn-line" style="background:linear-gradient(180deg,var(--amber),rgba(245,158,11,.2))"></div></div><div class="bpmn-decision-content"><div class="decision-box" onclick="openStep('od2')"><div class="decision-head"><span class="decision-diamond-icon">◇</span><span class="decision-q">¿Aprueba Gobierno Técnico?</span></div><div class="decision-branches"><span class="branch-no">✗ No → Ajustar namings (regresa paso 3)</span><span class="branch-yes">✓ Sí → Clasificar campos de seguridad</span></div></div></div></div>
+        <div class="bpmn-step-row"><div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.3)">🔐 SEGURIDAD</span></div><div class="bpmn-spine"><div class="bpmn-dot" style="background:#dc2626"></div><div class="bpmn-line"></div></div><div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('o5')"><div class="bstep-num" style="background:#dc2626">5</div><div class="bstep-text-wrap"><div class="bstep-name">Clasificar Campos de Seguridad</div><div class="bstep-sub">Revisar confidencialidad y niveles de acceso</div></div></div></div></div>
+        <div class="bpmn-decision-row"><div class="bpmn-spine" style="margin-left:120px"><div class="bpmn-dot" style="background:var(--amber);margin-top:30px;box-shadow:0 0 8px rgba(245,158,11,.5)"></div><div class="bpmn-line" style="background:linear-gradient(180deg,var(--amber),rgba(245,158,11,.2))"></div></div><div class="bpmn-decision-content"><div class="decision-box" onclick="openStep('od3')"><div class="decision-head"><span class="decision-diamond-icon">◇</span><span class="decision-q">¿Hay campos confidenciales o críticos?</span></div><div class="decision-branches"><span class="branch-yes">✓ Sí → Etiquetar con clasificación</span><span class="branch-no">✗ No → Registrar en RCN</span></div></div></div></div>
+        <div class="bpmn-step-row"><div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.3)">🔐 SEGURIDAD</span></div><div class="bpmn-spine"><div class="bpmn-dot" style="background:#dc2626"></div><div class="bpmn-line"></div></div><div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('o6')"><div class="bstep-num" style="background:#dc2626">6a</div><div class="bstep-text-wrap"><div class="bstep-name">Etiquetar con Clasificación</div><div class="bstep-sub">Asignar etiquetas HABEAS DATA / Confidencial / Restringido</div></div></div></div></div>
+        <div class="bpmn-step-row"><div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(109,40,217,.2);color:#c4b5fd;border:1px solid rgba(109,40,217,.4)">🏗️ ARQ.</span></div><div class="bpmn-spine"><div class="bpmn-dot" style="background:#6d28d9"></div><div class="bpmn-line"></div></div><div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('o7')"><div class="bstep-num" style="background:#6d28d9">7</div><div class="bstep-text-wrap"><div class="bstep-name">Registrar en RCN</div><div class="bstep-sub">Registrar nombres físicos aprobados en el Repositorio Central</div></div></div></div></div>
+        <div class="bpmn-step-row"><div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(14,165,233,.15);color:#38bdf8;border:1px solid rgba(14,165,233,.3)">⚙️ GOB. TÉC.</span></div><div class="bpmn-spine"><div class="bpmn-dot" style="background:#0ea5e9"></div><div class="bpmn-line"></div></div><div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('o8')"><div class="bstep-num" style="background:#0ea5e9">8</div><div class="bstep-text-wrap"><div class="bstep-name">Validar Integridad del RCN</div><div class="bstep-sub">Verificar consistencia y completitud del registro</div></div></div></div></div>
+        <div class="bpmn-step-row"><div class="bpmn-lane-col"><span class="lane-pill" style="background:rgba(124,111,247,.15);color:#a78bfa;border:1px solid rgba(124,111,247,.3)">🏢 PROYECTO</span></div><div class="bpmn-spine"><div class="bpmn-dot" style="background:var(--cyan);box-shadow:0 0 12px rgba(6,182,212,.5)"></div></div><div class="bpmn-step-content"><div class="bstep-box" onclick="openStep('o9')" style="border-color:var(--cyan);background:rgba(6,182,212,.06)"><div class="bstep-num" style="background:var(--cyan)">9</div><div class="bstep-text-wrap"><div class="bstep-name" style="color:var(--cyan)">Cerrar Proceso y Desplegar</div><div class="bstep-sub">Cierre formal · Comunicación a stakeholders</div></div></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: HERRAMIENTAS -->
+  <div class="page-content" id="page-herramientas">
+    <div class="page-header">
+      <div class="page-title">🔧 Links de <span style="color:var(--accent-2)">Interés</span></div>
+      <div class="page-subtitle">Copia el link que necesitas y pégalo en el navegador de la cuenta correspondiente</div>
+    </div>
+    <div class="tools-header">
+      <div class="tools-search">
+        <span>🔍</span>
+        <input type="text" placeholder="Buscar herramienta…" id="toolSearch" oninput="filterTools()"/>
+      </div>
+      <div class="filter-chips">
+        <div class="chip active" data-cat="all" onclick="filterByCategory(this)">Todas</div>
+        <div class="chip" data-cat="procesamiento" onclick="filterByCategory(this)">⚡ Procesamiento</div>
+        <div class="chip" data-cat="infraestructura" onclick="filterByCategory(this)">🏗️ Infraestructura</div>
+        <div class="chip" data-cat="seguridad" onclick="filterByCategory(this)">🔐 Seguridad</div>
+        <div class="chip" data-cat="documentacion" onclick="filterByCategory(this)">📄 Documentación</div>
+        <div class="chip" data-cat="formularios" onclick="filterByCategory(this)">📑 Formularios</div>
+      </div>
+    </div>
+    <div class="tools-grid" id="toolsGrid"></div>
+    <div class="empty-state" id="toolsEmpty" style="display:none">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">No se encontraron herramientas</div>
+      <div class="empty-desc">Intenta con otro término o <span style="color:var(--accent-2);cursor:pointer" onclick="askBotAbout('No encuentro la herramienta')">pregúntale a Aria</span></div>
+    </div>
+  </div>
+
+  <!-- PAGE: DESAFÍO RCN -->
+  <div class="page-content" id="page-ejercicios">
+    <div class="page-header">
+      <div class="page-title">🎯 Desafío <span style="color:var(--accent-2)">RCN</span></div>
+      <div class="page-subtitle">Adivina el nombre del campo en el RCN a partir de una descripción legacy inventada por TIMIA · Motor semántico LaBSE valida tu respuesta</div>
+    </div>
+
+    <div class="challenge-header">
+      <div class="challenge-header-left">
+        <h2>🏆 ¿Conoces el RCN?</h2>
+        <p>Te mostramos una descripción legacy · Tú propones el nombre físico en el RCN · La IA valida si acertaste</p>
+      </div>
+      <div class="challenge-progress" id="challengeProgress">
+        <div class="progress-orb active" id="orb-0">1</div>
+        <div class="progress-orb" id="orb-1">2</div>
+        <div class="progress-orb" id="orb-2">3</div>
+        <div class="progress-orb" id="orb-3">4</div>
+        <div class="progress-orb" id="orb-4">5</div>
+      </div>
+    </div>
+
+    <div id="challengeArea"></div>
+  </div>
+
+  <!-- PAGE: MODELO SDM -->
+  <div class="page-content" id="page-modelo">
+    <div class="page-header">
+      <div class="page-title">🏗️ Modelo <span style="color:var(--accent-2)">SDM Global</span></div>
+      <div class="page-subtitle">Single Data Model · Marco unificado de estandarización y gobernanza del dato</div>
+    </div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:16px">🎯 Objetivos del SDM</div>
+    <div class="sdm-objectives" style="margin-bottom:28px">
+      <div class="obj-card"><div class="obj-icon">🎯</div><div class="obj-title">Estandarización</div><div class="obj-desc">Unificar la definición y nomenclatura mediante TC-015 en toda la organización</div></div>
+      <div class="obj-card"><div class="obj-icon">🤝</div><div class="obj-title">Colaboración</div><div class="obj-desc">Facilitar el trabajo conjunto entre dominios funcionales y proyectos habilitadores</div></div>
+      <div class="obj-card"><div class="obj-icon">🔍</div><div class="obj-title">Trazabilidad</div><div class="obj-desc">Garantizar el linaje completo desde fuentes legacy hasta ADA</div></div>
+      <div class="obj-card"><div class="obj-icon">✅</div><div class="obj-title">Calidad</div><div class="obj-desc">Asegurar calidad y consistencia del dato mediante reglas de validación</div></div>
+      <div class="obj-card"><div class="obj-icon">🚀</div><div class="obj-title">Agilidad</div><div class="obj-desc">Acelerar la entrega de datos gobernados con procesos claros y eficientes</div></div>
+      <div class="obj-card"><div class="obj-icon">📊</div><div class="obj-title">Visibilidad</div><div class="obj-desc">Catálogo de datos visible mediante DATUM y Catálogo Taxonomy</div></div>
+    </div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:16px">🏛️ Estructura de Gobierno</div>
+    <div class="card" style="margin-bottom:24px">
+      <div class="sdm-pyramid">
+        <div class="pyramid-level pyr-1">👑 Foros Ejecutivos</div>
+        <div class="pyramid-level pyr-2">🏛️ Comités de Gobierno de Datos</div>
+        <div class="pyramid-level pyr-3">📊 Dominios Funcionales (3)</div>
+        <div class="pyramid-level pyr-4">⚙️ Proyectos Habilitadores PH (4)</div>
+        <div class="pyramid-level pyr-5">🗃️ Datos Operacionales · Legacy · Esquemas</div>
+      </div>
+    </div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:16px">🔄 Proceso de Transformación</div>
+    <div class="flow-container">
+      <div class="flow-steps">
+        <div class="flow-step"><div class="flow-step-box"><div class="flow-step-icon">📦</div><span>Info<br>Legacy</span><div class="flow-step-num">1</div></div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-step"><div class="flow-step-box"><div class="flow-step-icon">📝</div><span>Pre<br>Diccionario</span><div class="flow-step-num">2</div></div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-step"><div class="flow-step-box"><div class="flow-step-icon">🏛️</div><span>Gobierno<br>Funcional</span><div class="flow-step-num">3</div></div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-step"><div class="flow-step-box"><div class="flow-step-icon">📚</div><span>Diccionario<br>&nbsp;</span><div class="flow-step-num">4</div></div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-step"><div class="flow-step-box"><div class="flow-step-icon">⚙️</div><span>Procesamiento<br>&nbsp;</span><div class="flow-step-num">5</div></div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-step"><div class="flow-step-box" style="border-color:var(--cyan);background:rgba(6,182,212,.08)"><div class="flow-step-icon">🚀</div><span style="color:var(--cyan)">ADA<br>&nbsp;</span><div class="flow-step-num" style="background:var(--cyan)">6</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: BUENAS PRACTICAS -->
+  <div class="page-content" id="page-practicas">
+    <div class="page-header">
+      <div class="page-title">📋 Buenas <span style="color:var(--accent-2)">Prácticas</span></div>
+      <div class="page-subtitle">Guía para proponer Pre-Diccionarios · TC-015 NextGen v2.7</div>
+    </div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:16px;color:var(--accent-2)">3.1 Consideraciones Previas</div>
+    <div class="grid grid-3" style="margin-bottom:24px">
+      <div class="card" style="text-align:center"><div style="font-size:32px;margin-bottom:10px">🔍</div><div style="font-size:13.5px;font-weight:700;margin-bottom:8px">Búsqueda Previa</div><div style="font-size:12.5px;color:var(--text-2)">Verificar en DATUM si el campo ya existe antes de proponer un nuevo Pre-Diccionario</div></div>
+      <div class="card" style="text-align:center"><div style="font-size:32px;margin-bottom:10px">🗄️</div><div style="font-size:13.5px;font-weight:700;margin-bottom:8px">Base de Datos</div><div style="font-size:12.5px;color:var(--text-2)">Confirmar dominio, esquema y tabla destino antes de iniciar la nomenclatura</div></div>
+      <div class="card" style="text-align:center"><div style="font-size:32px;margin-bottom:10px">✏️</div><div style="font-size:13.5px;font-weight:700;margin-bottom:8px">Diseño TC-015</div><div style="font-size:12.5px;color:var(--text-2)">Aplicar reglas de nomenclatura NextGen v2.7 desde el inicio para evitar rechazos</div></div>
+    </div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:16px;color:var(--accent-2)">3.2 Reglas y Validaciones</div>
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <div class="accordion-title">📏 Reglas de Nomenclatura Física</div><span class="accordion-chevron">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="checklist-item"><span class="check-icon">✓</span>Usar solo letras minúsculas, números y guion bajo (_)</div>
+        <div class="checklist-item"><span class="check-icon">✓</span>El nombre físico debe iniciar con el nombre del objeto o concepto de negocio</div>
+        <div class="checklist-item"><span class="check-icon">✓</span>Agregar el sufijo correspondiente al final según el tipo de dato (TC-015)</div>
+        <div class="checklist-item"><span class="check-icon">✓</span>Máximo 64 caracteres para el nombre físico</div>
+        <div class="checklist-item"><span class="check-icon">✓</span>No usar caracteres especiales, tildes ni espacios</div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <div class="accordion-title">🏷️ Nombre Lógico y Descripción</div><span class="accordion-chevron">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="checklist-item"><span class="check-icon">✓</span>El nombre lógico debe ser descriptivo y en español, reflejando el significado de negocio</div>
+        <div class="checklist-item"><span class="check-icon">✓</span>La descripción debe incluir la fuente origen, uso del campo y ejemplos de valores</div>
+        <div class="checklist-item"><span class="check-icon">✓</span>Máximo 255 caracteres para la descripción</div>
+        <div class="checklist-item"><span class="check-icon">✓</span>Indicar si el campo es calculado, derivado o proveniente de fuente legacy</div>
+      </div>
+    </div>
+    <div style="font-size:15px;font-weight:700;margin:24px 0 16px;color:var(--accent-2)">📖 Catálogo de Sufijos TC-015</div>
+    <div class="card">
+      <table class="suffix-table">
+        <thead><tr><th>Sufijo</th><th>Nombre Lógico</th><th>Formato</th><th>Descripción</th><th>Ejemplo</th></tr></thead>
+        <tbody>
+          <tr><td><code>_id</code></td><td>Identificador</td><td>NUMERIC/VARCHAR</td><td>Clave única del objeto</td><td><code>cliente_id</code></td></tr>
+          <tr><td><code>_nm</code></td><td>Nombre</td><td>VARCHAR</td><td>Nombre o denominación</td><td><code>producto_nm</code></td></tr>
+          <tr><td><code>_ds</code></td><td>Descripción</td><td>VARCHAR(255)</td><td>Texto descriptivo extendido</td><td><code>cuenta_ds</code></td></tr>
+          <tr><td><code>_cd</code></td><td>Código</td><td>VARCHAR</td><td>Código alfanumérico de catálogo</td><td><code>pais_cd</code></td></tr>
+          <tr><td><code>_dt</code></td><td>Fecha</td><td>DATE</td><td>Valor de fecha sin hora</td><td><code>apertura_dt</code></td></tr>
+          <tr><td><code>_ts</code></td><td>Timestamp</td><td>TIMESTAMP</td><td>Fecha con hora y zona horaria</td><td><code>actualizacion_ts</code></td></tr>
+          <tr><td><code>_am</code></td><td>Monto</td><td>DECIMAL(18,2)</td><td>Valor monetario con precisión</td><td><code>saldo_am</code></td></tr>
+          <tr><td><code>_qt</code></td><td>Cantidad</td><td>INTEGER</td><td>Valor numérico de conteo</td><td><code>transacciones_qt</code></td></tr>
+          <tr><td><code>_fl</code></td><td>Flag / Indicador</td><td>VARCHAR(1)</td><td>Indicador booleano S/N</td><td><code>activo_fl</code></td></tr>
+          <tr><td><code>_tp</code></td><td>Tipo</td><td>VARCHAR</td><td>Clasificación o categoría</td><td><code>producto_tp</code></td></tr>
+          <tr><td><code>_pct</code></td><td>Porcentaje</td><td>DECIMAL(5,2)</td><td>Valor porcentual 0–100</td><td><code>comision_pct</code></td></tr>
+          <tr><td><code>_url</code></td><td>URL</td><td>VARCHAR(2048)</td><td>Dirección web o recurso HTTP</td><td><code>imagen_url</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div><!-- /main-wrapper -->
+
+<!-- STEP DETAIL OVERLAY + PANEL -->
+<div class="step-overlay" id="stepOverlay" onclick="closeStep()"></div>
+<div class="step-panel" id="stepPanel">
+  <div class="step-panel-header">
+    <div>
+      <div class="sp-step-tag" id="spTag">PASO</div>
+      <div class="sp-title" id="spTitle">Título del paso</div>
+    </div>
+    <button class="sp-close" onclick="closeStep()">✕</button>
+  </div>
+  <div class="step-panel-body">
+    <div class="sp-actor-wrap">
+      <div class="sp-actor-pill" id="spActor">Actor</div>
+    </div>
+    <div class="sp-section">
+      <div class="sp-section-title">Descripción del paso</div>
+      <div class="sp-desc" id="spDesc"></div>
+    </div>
+    <div class="sp-section" id="spContactsSection">
+      <div class="sp-section-title">📧 Contactos a incluir en el correo</div>
+      <div id="spContacts"></div>
+      <button class="copy-all-btn" onclick="copyAllContacts()">📋 Copiar todos los contactos</button>
+    </div>
+    <div class="sp-section" id="spTipsSection">
+      <div class="sp-section-title">💡 Tips del paso</div>
+      <div id="spTips"></div>
+    </div>
+    <div class="sp-next-box" id="spNext"></div>
+  </div>
+</div>
+
+<!-- AI CHAT -->
+<div class="chat-bubble" id="chatBubble">
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header">
+      <div class="chat-avatar">🤖</div>
+      <div class="chat-header-info">
+        <h4>Aria · Asistente TIMIA</h4>
+        <p><span class="status-dot"></span>En línea · Lista para ayudarte</p>
+      </div>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="msg bot">
+        <span class="msg-icon">🤖</span>
+        <div class="msg-bubble">¡Hola! 👋 Soy <strong>Aria</strong>, tu asistente TIMIA.<br><br>Puedo ayudarte con los <strong>Flujos de Gobierno</strong> paso a paso, el <strong>Desafío RCN</strong>, herramientas, nomenclatura TC-015, y más.<br><br>¿En qué te puedo ayudar?</div>
+      </div>
+    </div>
+    <div class="chat-suggestions" id="chatSuggestions">
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">¿Qué es el Desafío RCN?</div>
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">Sufijos TC-015</div>
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">Contactos de gobierno</div>
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">¿Cómo van los flujos?</div>
+    </div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chatInput" rows="1" placeholder="Escribe tu pregunta…"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+        oninput="autoGrow(this)"></textarea>
+      <button class="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+  <button class="chat-toggle-btn" id="chatToggleBtn" onclick="toggleChat()">
+    <span class="chat-icon">💬</span><span class="close-icon">✕</span>
+  </button>
+</div>
+
+<div class="toast" id="toast"><span class="toast-icon" id="toastIcon"></span><span class="toast-text" id="toastText"></span></div>
+
+<script>
+/* ─── NAV ─── */
+const pageNames={dashboard:'Dashboard Overview',flujos:'Flujos de Gobierno',herramientas:'Links de Interés',ejercicios:'Desafío RCN',modelo:'Modelo SDM Global',practicas:'Buenas Prácticas'};
+function navigate(page,el){
+  document.querySelectorAll('.page-content').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const target=el||document.querySelector(`[data-page="${page}"]`);
+  if(target)target.classList.add('active');
+  if(!el){const t=document.querySelector(`[data-page="${page}"]`);if(t)t.classList.add('active');}
+  document.getElementById('topbarTitle').innerHTML=pageNames[page];
+  if(page==='herramientas')renderTools();
+  if(page==='ejercicios'&&!challengeState.initialized)initChallenge();
+}
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('mainWrapper').classList.toggle('collapsed');
+}
+function switchFlujo(type,btn){
+  document.querySelectorAll('#page-flujos .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('flujo-informacional').style.display=type==='informacional'?'':'none';
+  document.getElementById('flujo-operacional').style.display=type==='operacional'?'':'none';
+}
+function toggleAccordion(header){
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+function globalSearchFn(q){
+  if(!q)return;
+  const qL=q.toLowerCase();
+  const map={herramienta:'herramientas',link:'herramientas',flujo:'flujos',gobierno:'flujos',sdm:'modelo',modelo:'modelo',sufijo:'practicas',buenas:'practicas',rcn:'ejercicios',buscador:'ejercicios',semantico:'ejercicios',desafio:'ejercicios'};
+  for(const[k,p]of Object.entries(map)){if(qL.includes(k)){navigate(p,null);return;}}
+}
+
+/* ─── STEP DETAIL PANEL ─── */
+const DEFAULT_CONTACTS=[
+  {name:'Alfonso Portillo',role:'Líder Técnico Banco',avatar:'👨‍💼'},
+  {name:'Juan Pablo Arévalo',role:'Líder TIMIA',avatar:'👨‍🔬'},
+  {name:'Buzón de Gobierno',role:'Dirección de Gobierno del Dato · [completar correo]',avatar:'📬'},
+];
+const stepData={
+  i1:{tag:'PASO 1 · Informacional',title:'Definir Objetos del Negocio',actor:'🏢 Proyecto',actorBg:'rgba(124,111,247,.2)',actorColor:'#a78bfa',desc:'El equipo de proyecto identifica y documenta todos los objetos de negocio que serán gobernados. Se levanta el inventario de campos legacy, sus fuentes de origen y el contexto de negocio. Esta etapa es la base sobre la que se construirán los Pre-Diccionarios.',tips:['Usar Bizagi para modelar y documentar los flujos','Incluir el dominio funcional desde el inicio','Documentar la fuente legacy y el sistema de origen de cada campo'],next:'Presentar en Bizagi (Paso 2)'},
+  i2:{tag:'PASO 2 · Informacional',title:'Presentar en Bizagi',actor:'🏢 Proyecto',actorBg:'rgba(124,111,247,.2)',actorColor:'#a78bfa',desc:'El equipo presenta el modelado de los objetos en Bizagi al comité de gobierno. Se revisan los flujos de datos, relaciones y dependencias. Esta revisión determina si el modelo está listo para pasar a la fase de naming o necesita ajustes.',tips:['Preparar el modelo con suficiente detalle técnico y funcional','Involucrar al Gobierno Funcional en la sesión de revisión','Documentar los comentarios y observaciones del comité'],next:'Decisión: ¿Se aprueba en Bizagi?'},
+  id1:{tag:'DECISIÓN · Informacional',title:'¿Se aprueba la presentación en Bizagi?',actor:'🏛️ Gobierno Funcional',actorBg:'rgba(3,105,161,.2)',actorColor:'#7dd3fc',desc:'El comité de gobierno funcional evalúa si el modelo presentado en Bizagi cumple con los criterios de calidad y completitud necesarios para proceder al naming. Si no se aprueba, el proyecto debe diligenciar las fuentes de datos faltantes y ajustar el modelo.',tips:['Criterios: completitud, coherencia con el modelo SDM, fuentes identificadas','En caso de rechazo, documentar exactamente qué debe corregirse','El plazo típico para respuesta del comité es 3-5 días hábiles'],next:'Sí → Elaborar Namings · No → Diligenciar Fuentes'},
+  i3:{tag:'PASO 3a · Informacional (Rama No)',title:'Diligenciar Fuentes de Datos',actor:'🏢 Proyecto',actorBg:'rgba(124,111,247,.2)',actorColor:'#a78bfa',desc:'Cuando el comité rechaza la presentación inicial, el equipo de proyecto debe completar la información de las fuentes de datos: identificar los sistemas de origen, los tipos de dato, frecuencia de actualización y linaje completo. Luego se retorna al Paso 2 para una nueva presentación.',tips:['Documentar la fuente: sistema, tabla, campo origen','Incluir el diagrama de linaje del dato','Coordinar con el área de Arquitectura de Datos si hay dudas'],next:'Regresa a Presentar en Bizagi (Paso 2)'},
+  i4:{tag:'PASO 4 · Informacional',title:'Elaborar Namings',actor:'🏛️ Gobierno Funcional',actorBg:'rgba(3,105,161,.2)',actorColor:'#7dd3fc',desc:'El Gobierno Funcional lidera la elaboración de los nombres lógicos y físicos de los campos siguiendo estrictamente la norma TC-015 NextGen v2.7. Cada nombre físico debe ser construido con el prefijo de concepto de negocio y el sufijo de tipo de dato correspondiente (ej: cliente_id, fecha_apertura_dt).',tips:['Aplicar sufijos TC-015: _id, _nm, _dt, _am, _fl, _cd, etc.','Verificar en DATUM que el nombre no exista previamente','Máximo 64 caracteres para el nombre físico'],next:'Validar Pre-Diccionarios con DPM (Paso 5)'},
+  i5:{tag:'PASO 5 · Informacional',title:'Validar Pre-Diccionarios',actor:'📊 DPM',actorBg:'rgba(4,120,87,.2)',actorColor:'#6ee7b7',desc:'El Data Product Manager (DPM) revisa la coherencia del Pre-Diccionario propuesto: verifica que los nombres sean únicos, que las descripciones sean precisas y estén en el idioma correcto, y que las fuentes estén debidamente referenciadas. Coordina con gobierno si detecta inconsistencias.',tips:['Verificar que todas las descripciones estén en español','Confirmar que no hay duplicados en DATUM','Revisar que cada campo tenga fuente y tipo de dato definidos'],next:'Decisión: ¿Se aprueba el Pre-Diccionario?'},
+  id2:{tag:'DECISIÓN · Informacional',title:'¿Se aprueba el Pre-Diccionario?',actor:'📊 DPM',actorBg:'rgba(4,120,87,.2)',actorColor:'#6ee7b7',desc:'El DPM determina si el Pre-Diccionario cumple con todos los estándares de calidad. Si hay observaciones, el proceso regresa al paso 4 para ajustar los namings. Si se aprueba, se procede a registrarlo en Nexus.',tips:['El Pre-Dic debe tener: nombre lógico, físico, descripción, tipo, fuente','Las observaciones deben ser específicas y accionables','Tiempo promedio de revisión: 2-3 días hábiles'],next:'Sí → Registrar en Nexus · No → Ajustar Namings (Paso 4)'},
+  i6:{tag:'PASO 6 · Informacional',title:'Registrar en Nexus',actor:'📊 DPM',actorBg:'rgba(4,120,87,.2)',actorColor:'#6ee7b7',desc:'El DPM procede a registrar formalmente los objetos de datos aprobados en la plataforma Nexus y DATUM. Este registro es oficial y queda como evidencia del proceso de gobierno. Se asignan los identificadores únicos de cada objeto.',tips:['Usar la plantilla oficial de registro en Nexus','Verificar que el ID generado sea correcto','Notificar al Gobierno Técnico una vez registrado'],next:'Validar Objetos con Gobierno Técnico (Paso 7)'},
+  i7:{tag:'PASO 7 · Informacional',title:'Validar Objetos',actor:'⚙️ Gobierno Técnico',actorBg:'rgba(14,165,233,.15)',actorColor:'#38bdf8',desc:'Gobierno Técnico realiza una validación profunda de los objetos registrados: verifica la coherencia técnica (tipos de dato, longitudes, formatos), la consistencia con el modelo de datos existente y el cumplimiento de las reglas de arquitectura de la plataforma ADA.',tips:['Verificar tipos de dato y longitudes según el sistema destino','Revisar relaciones entre tablas y dependencias técnicas','Documentar observaciones en la herramienta de seguimiento'],next:'Realizar Propuesta de Diccionarios (Paso 8)'},
+  i8:{tag:'PASO 8 · Informacional',title:'Realizar Propuesta de Diccionarios',actor:'🏛️ Gobierno Funcional',actorBg:'rgba(3,105,161,.2)',actorColor:'#7dd3fc',desc:'Con base en el Pre-Diccionario aprobado y la validación técnica, el Gobierno Funcional elabora el Diccionario de Datos oficial. Este documento incluye todas las definiciones formales, relaciones, reglas de negocio y metadatos que serán la referencia para el dominio.',tips:['El diccionario es el documento de referencia final','Incluir ejemplos de valores válidos para cada campo','Revisar con el dominio funcional antes de enviar a validación técnica'],next:'Validar Diccionarios con Gobierno Técnico (Paso 9)'},
+  i9:{tag:'PASO 9 · Informacional',title:'Validar Diccionarios (Gobierno Técnico)',actor:'⚙️ Gobierno Técnico',actorBg:'rgba(14,165,233,.15)',actorColor:'#38bdf8',desc:'Gobierno Técnico realiza la revisión técnica final del Diccionario de Datos: valida esquemas, tipos de dato, relaciones, integridad referencial y compatibilidad con la plataforma ADA. Cualquier inconsistencia técnica debe ser corregida antes de continuar.',tips:['Revisar esquemas Avro/Parquet si aplica','Validar compatibilidad con versiones de ADA','Registrar el resultado de la validación en el sistema de seguimiento'],next:'Decisión: ¿Aprueba Gobierno Técnico?'},
+  id3:{tag:'DECISIÓN · Informacional',title:'¿Aprueba Gobierno Técnico?',actor:'⚙️ Gobierno Técnico',actorBg:'rgba(14,165,233,.15)',actorColor:'#38bdf8',desc:'Gobierno Técnico emite su voto formal de aprobación o rechazo del Diccionario. Si hay observaciones técnicas, el proceso regresa al Paso 8 para que Gobierno Funcional ajuste las propuestas. Si se aprueba, continúa la validación con Arquitectura Local.',tips:['Las observaciones técnicas deben tener número de referencia','El rechazo debe incluir instrucciones claras de corrección','Tiempo máximo de respuesta: 5 días hábiles'],next:'Sí → Arquitectura Local · No → Ajustar (Paso 8)'},
+  i10:{tag:'PASO 10 · Informacional',title:'Validar Diccionarios (Arquitectura Local)',actor:'🏗️ Arquitectura Local',actorBg:'rgba(109,40,217,.2)',actorColor:'#c4b5fd',desc:'El equipo de Arquitectura Local revisa que el Diccionario sea coherente con la arquitectura de datos del banco en Colombia: revisa el modelo de datos local, las integraciones con sistemas legacy y la capacidad de implementación en la infraestructura existente.',tips:['Verificar compatibilidad con arquitectura local vs. global SDM','Revisar impacto en sistemas de integración existentes','Coordinar con el equipo de infraestructura si hay cambios de esquema'],next:'Decisión: ¿Aprueba Arquitectura Local?'},
+  id4:{tag:'DECISIÓN · Informacional',title:'¿Aprueba Arquitectura Local?',actor:'🏗️ Arquitectura Local',actorBg:'rgba(109,40,217,.2)',actorColor:'#c4b5fd',desc:'Arquitectura Local emite su aprobación considerando la viabilidad técnica en el contexto local del banco. En caso de rechazo, el proceso regresa al Paso 8. Si hay aprobación, se verifica si existen namings nuevos que requieran clasificación de seguridad.',tips:['Revisar que los cambios sean implementables sin impactar producción','Considerar el calendario de releases del banco','Documentar la decisión en el sistema de gobierno'],next:'Sí → Verificar Namings Nuevos · No → Ajustar (Paso 8)'},
+  id5:{tag:'DECISIÓN · Informacional',title:'¿Existen Namings nuevos?',actor:'🏛️ Gobierno Funcional',actorBg:'rgba(3,105,161,.2)',actorColor:'#7dd3fc',desc:'Se verifica si en el proceso se han creado nombres físicos completamente nuevos que no existían en el RCN. Si los hay, deben ser clasificados por el equipo de Seguridad antes del cierre. Si todos los nombres ya existían o fueron reutilizados, se puede cerrar directamente.',tips:['Comparar el listado de nombres contra el RCN vigente','Los nombres nuevos deben pasar por clasificación de seguridad obligatoriamente','Documentar qué nombres son nuevos vs. reutilizados'],next:'Sí → Etiquetar en Seguridad · No → Cerrar y Desplegar'},
+  i11:{tag:'PASO 11 · Informacional',title:'Etiquetar Namings (Seguridad)',actor:'🔐 Seguridad',actorBg:'rgba(220,38,38,.12)',actorColor:'#fca5a5',desc:'El equipo de Seguridad clasifica los nombres físicos nuevos según los niveles de confidencialidad del banco: Público, Interno, Confidencial o Restringido. También aplica etiquetas HABEAS DATA si los campos contienen datos personales de clientes. Esta clasificación es obligatoria por normativa.',tips:['Revisar si el campo contiene PII (datos personales)','Aplicar la matriz de clasificación HABEAS DATA','Coordinar con el DPO (Data Protection Officer) si hay dudas'],next:'Cerrar y Desplegar en ADA (Paso 12)'},
+  i12:{tag:'PASO 12 · CIERRE · Informacional',title:'Cerrar y Desplegar en ADA',actor:'🏢 Proyecto',actorBg:'rgba(6,182,212,.15)',actorColor:'#67e8f9',desc:'Hito final del flujo informacional: se formaliza el cierre del proceso de gobierno, se despliegan los esquemas validados en la plataforma ADA y se notifica a todos los stakeholders. El Diccionario queda disponible en DATUM para consulta.',tips:['Generar el acta de cierre con todas las firmas requeridas','Desplegar en ambiente de certificación antes de producción','Notificar a todos los equipos que consumirán los datos'],next:'✅ Fin del Flujo Informacional'},
+  o1:{tag:'PASO 1 · Operacional',title:'Levantamiento de Necesidades',actor:'🏢 Proyecto',actorBg:'rgba(124,111,247,.2)',actorColor:'#a78bfa',desc:'El equipo de proyecto realiza una sesión de entendimiento con los funcionales del negocio para identificar los campos de datos requeridos para el proyecto. Se documentan los nombres legacy, las descripciones en lenguaje de negocio y el contexto de uso de cada campo.',tips:['Usar el Buscador RCN para verificar si los campos ya existen','Documentar el nombre legacy EXACTAMENTE como aparece en el sistema fuente','Incluir ejemplos de valores reales de cada campo'],next:'Decisión: ¿Existen campos similares en el RCN?'},
+  od1:{tag:'DECISIÓN · Operacional',title:'¿Existen campos similares en el RCN?',actor:'🏢 Proyecto + Arquitectura',actorBg:'rgba(124,111,247,.2)',actorColor:'#a78bfa',desc:'Se consulta el Repositorio Central de Nombres (RCN) usando el Buscador Semántico para determinar si ya existen campos equivalentes. Esta búsqueda evita la proliferación de campos duplicados. Si se encuentran equivalentes, se reutilizan. Si no, se proponen nombres nuevos.',tips:['Usar el Desafío RCN de esta plataforma para practicar la búsqueda','Umbral recomendado de similitud: ≥ 0.75 para considerar reutilización','Documentar el resultado de la búsqueda en el acta de levantamiento'],next:'Sí → Reutilizar · No → Proponer Namings'},
+  o2:{tag:'PASO 2a · Operacional (Rama Sí)',title:'Reutilizar Campos Existentes',actor:'🏢 Proyecto',actorBg:'rgba(16,185,129,.15)',actorColor:'#34d399',desc:'Si se encontraron campos equivalentes en el RCN, el equipo mapea el nombre legacy del proyecto al nombre físico oficial existente. Se documenta este mapeo y se notifica al gobierno. No se requiere crear un Pre-Diccionario nuevo.',tips:['Documentar el mapeo: [nombre legacy] → [nombre físico RCN]','Confirmar con Gobierno Técnico que el mapeo es correcto','Registrar el mapeo en el sistema de linaje del dato'],next:'Registrar en RCN (Paso 7)'},
+  o3:{tag:'PASO 3 · Operacional',title:'Proponer Namings Nuevos',actor:'🏛️ Gobierno Funcional',actorBg:'rgba(3,105,161,.2)',actorColor:'#7dd3fc',desc:'Cuando no existen campos equivalentes, el Gobierno Funcional propone nombres físicos siguiendo la norma TC-015. Se construye el nombre a partir del concepto de negocio (prefijo) y el tipo de dato (sufijo). Se elabora el Pre-Diccionario con toda la información requerida.',tips:['Seguir el patrón: [concepto_negocio]_[sufijo_tipo]','Consultar el catálogo de sufijos en Buenas Prácticas','Incluir descripción, tipo de dato, longitud y fuente en el Pre-Dic'],next:'Revisar y Aprobar Namings (Paso 4)'},
+  o4:{tag:'PASO 4 · Operacional',title:'Revisar y Aprobar Namings',actor:'⚙️ Gobierno Técnico',actorBg:'rgba(14,165,233,.15)',actorColor:'#38bdf8',desc:'Gobierno Técnico revisa los namings propuestos verificando: cumplimiento TC-015, ausencia de duplicados en el RCN, coherencia técnica (tipos de dato, longitudes) y viabilidad de implementación en la plataforma ADA.',tips:['Verificar en DATUM que no exista el nombre propuesto','Revisar que el sufijo corresponda al tipo de dato real','Confirmar que la longitud del nombre físico no exceda 64 caracteres'],next:'Decisión: ¿Aprueba Gobierno Técnico?'},
+  od2:{tag:'DECISIÓN · Operacional',title:'¿Aprueba Gobierno Técnico?',actor:'⚙️ Gobierno Técnico',actorBg:'rgba(14,165,233,.15)',actorColor:'#38bdf8',desc:'Gobierno Técnico emite su aprobación formal. En caso de rechazo, devuelve con observaciones específicas para que Gobierno Funcional corrija los namings. Si aprueba, se procede a la clasificación de seguridad.',tips:['Plazo máximo de respuesta: 3 días hábiles','Las observaciones deben ser accionables y específicas','Registrar el resultado en el historial del Pre-Diccionario'],next:'Sí → Clasificar Seguridad · No → Ajustar (Paso 3)'},
+  o5:{tag:'PASO 5 · Operacional',title:'Clasificar Campos de Seguridad',actor:'🔐 Seguridad',actorBg:'rgba(220,38,38,.12)',actorColor:'#fca5a5',desc:'El equipo de Seguridad evalúa cada campo nuevo para determinar su nivel de confidencialidad. Revisa si contiene datos personales (PII), información financiera sensible, o datos sujetos a regulaciones especiales como HABEAS DATA.',tips:['Revisar si el campo almacena datos de clientes (PII)','Consultar la matriz de clasificación de datos del banco','Involucrar al DPO si hay campos con datos sensibles de menores'],next:'Decisión: ¿Hay campos confidenciales?'},
+  od3:{tag:'DECISIÓN · Operacional',title:'¿Hay campos confidenciales o críticos?',actor:'🔐 Seguridad',actorBg:'rgba(220,38,38,.12)',actorColor:'#fca5a5',desc:'Se determina si alguno de los campos nuevos requiere etiquetas de clasificación especiales. Si los hay, se aplican las etiquetas antes del registro en el RCN. Si no hay campos sensibles, se puede proceder directamente al registro.',tips:['Criterios: PII, datos financieros, datos de salud, menores de edad','La clasificación es irreversible una vez publicada en el RCN','Documentar el criterio de clasificación para auditorías'],next:'Sí → Etiquetar · No → Registrar en RCN'},
+  o6:{tag:'PASO 6a · Operacional (Rama Sí)',title:'Etiquetar con Clasificación',actor:'🔐 Seguridad',actorBg:'rgba(220,38,38,.12)',actorColor:'#fca5a5',desc:'Se aplican las etiquetas de clasificación a los campos identificados: Público, Interno, Confidencial o Restringido. Para campos con datos personales se aplica la etiqueta HABEAS DATA y se registran las restricciones de acceso correspondientes.',tips:['Usar las etiquetas estándar definidas por el banco','HABEAS DATA aplica a: nombre, email, teléfono, NIT, CC','Registrar quiénes tienen acceso autorizado al campo'],next:'Registrar en RCN (Paso 7)'},
+  o7:{tag:'PASO 7 · Operacional',title:'Registrar en RCN',actor:'🏗️ Arquitectura',actorBg:'rgba(109,40,217,.2)',actorColor:'#c4b5fd',desc:'Arquitectura registra los nombres físicos aprobados en el Repositorio Central de Nombres (RCN). Este registro es el acto formal que incorpora el campo al estándar del banco. A partir de este momento, todos los proyectos deben usar este nombre para referirse al campo.',tips:['Usar el formulario oficial de registro en el RCN','Verificar que la clasificación de seguridad esté incluida','Notificar a los equipos que estaban esperando el registro'],next:'Validar Integridad del RCN (Paso 8)'},
+  o8:{tag:'PASO 8 · Operacional',title:'Validar Integridad del RCN',actor:'⚙️ Gobierno Técnico',actorBg:'rgba(14,165,233,.15)',actorColor:'#38bdf8',desc:'Gobierno Técnico realiza una validación final para verificar que el registro en el RCN sea completo y consistente: revisa que todos los metadatos estén presentes, que las relaciones sean correctas y que no haya inconsistencias con el resto del catálogo.',tips:['Ejecutar el validador automático de consistencia del RCN','Verificar que la descripción no supere 255 caracteres','Confirmar que las referencias a otros campos sean válidas'],next:'Cerrar Proceso y Desplegar (Paso 9)'},
+  o9:{tag:'PASO 9 · CIERRE · Operacional',title:'Cerrar Proceso y Desplegar',actor:'🏢 Proyecto',actorBg:'rgba(6,182,212,.15)',actorColor:'#67e8f9',desc:'Cierre formal del flujo operacional. Se comunica a todos los stakeholders que los campos han sido registrados en el RCN y están disponibles para uso. Se envía el acta de cierre y se actualiza el estado del proyecto en el sistema de seguimiento.',tips:['Enviar comunicado formal a todos los dominios afectados','Actualizar el estado en la herramienta de gestión del proyecto','Archivar toda la documentación del proceso de gobierno'],next:'✅ Fin del Flujo Operacional'},
+};
+
+function openStep(id){
+  const d=stepData[id];if(!d)return;
+  const isDecision=id.startsWith('id')||id.startsWith('od');
+  document.getElementById('spTag').textContent=d.tag;
+  document.getElementById('spTitle').textContent=d.title;
+  const actorEl=document.getElementById('spActor');
+  actorEl.textContent=d.actor;actorEl.style.background=d.actorBg;actorEl.style.color=d.actorColor;actorEl.style.border=`1px solid ${d.actorColor}33`;
+  document.getElementById('spDesc').textContent=d.desc;
+  // contacts
+  const contacts=document.getElementById('spContacts');
+  contacts.innerHTML=DEFAULT_CONTACTS.map(c=>`<div class="contact-card"><div class="contact-avatar">${c.avatar}</div><div class="contact-info"><div class="contact-name">${c.name}</div><div class="contact-role">${c.role}</div></div><button class="contact-copy-btn" onclick="copyContact('${c.name}','${c.role}')">Copiar</button></div>`).join('');
+  // tips
+  const tips=document.getElementById('spTips');
+  tips.innerHTML=d.tips.map(t=>`<div class="sp-tip"><span class="sp-tip-dot">▸</span>${t}</div>`).join('');
+  // next
+  document.getElementById('spNext').innerHTML=`<span style="font-size:16px">→</span><span>Siguiente: <strong>${d.next}</strong></span>`;
+  document.getElementById('stepOverlay').classList.add('open');
+  document.getElementById('stepPanel').classList.add('open');
+}
+function closeStep(){
+  document.getElementById('stepOverlay').classList.remove('open');
+  document.getElementById('stepPanel').classList.remove('open');
+}
+function copyContact(name,role){
+  navigator.clipboard?.writeText(`${name} – ${role}`).catch(()=>{});
+  showToast(`Contacto de ${name} copiado`,'📋');
+}
+function copyAllContacts(){
+  const txt=DEFAULT_CONTACTS.map(c=>`${c.name} – ${c.role}`).join('\n');
+  navigator.clipboard?.writeText(txt).catch(()=>{});
+  showToast('Todos los contactos copiados','📋');
+}
+
+/* ─── TOOLS ─── */
+const tools=[
+  {name:'DataX',cat:'procesamiento',icon:'🔄',desc:'Herramienta central de gestión e intercambio de datos entre sistemas.',env:'Live · Work',url:'https://datax.central.nextgen.igrupobbva/'},
+  {name:'Consola ADA',cat:'procesamiento',icon:'🖥️',desc:'Consola principal de la plataforma ADA para administración de datos gobernados.',env:'Live · Work',url:'https://kevo.live-04.platform.bbva.com'},
+  {name:'DATUM',cat:'procesamiento',icon:'🗂️',desc:'Plataforma central del catálogo de datos, diccionarios y taxonomía.',env:'Live',url:'https://bbva-nhg.appspot.com'},
+  {name:'Fresno',cat:'procesamiento',icon:'🔍',desc:'Motor de búsqueda interno para el catálogo de gobierno de datos.',env:'Web App',url:'https://bbva-es-government-ing.appspot.com/search'},
+  {name:'Catálogo Taxonomy',cat:'procesamiento',icon:'🏷️',desc:'Taxonomía y clasificación oficial de datos, dominios y conceptos de negocio.',env:'Web',url:'https://bbva-taxonomy.appspot.com'},
+  {name:'Control-M',cat:'infraestructura',icon:'⏱️',desc:'Orquestador de trabajos batch y mallas de procesamiento empresarial.',env:'Live · Work',url:'#'},
+  {name:'Nebula',cat:'infraestructura',icon:'☁️',desc:'Plataforma de infraestructura cloud-native para despliegue de servicios.',env:'Live',url:'#'},
+  {name:'Console Ether',cat:'infraestructura',icon:'🌐',desc:'Consola de administración de la plataforma Ether en Google Cloud.',env:'Live',url:'https://bbva-ether-console-front.appspot.com/app'},
+  {name:'Artifactory',cat:'infraestructura',icon:'📦',desc:'Repositorio de artefactos: JARs, configuraciones, esquemas Avro/Parquet.',env:'Live',url:'https://artifactory.globaldevtools.bbva.com/'},
+  {name:'Citrix',cat:'infraestructura',icon:'💻',desc:'Escritorio virtual corporativo para acceso a herramientas internas en Colombia.',env:'Colombia',url:'#'},
+  {name:'GIAM',cat:'seguridad',icon:'🔑',desc:'Gestión de identidades y accesos (IAM). Administración de usuarios y roles.',env:'Live · Work',url:'#'},
+  {name:'Chimera',cat:'seguridad',icon:'🛡️',desc:'Plataforma de análisis de seguridad estático de código (SAST).',env:'Live',url:'https://chimera.live.global.platform.bbva.com/sast'},
+  {name:'ACL Validador',cat:'seguridad',icon:'✅',desc:'Validador de listas de control de acceso.',env:'Google Sheets',url:'#'},
+  {name:'Helix CRQ',cat:'seguridad',icon:'🎫',desc:'Gestión de Change Requests (CRQ) en plataforma BMC Helix ITSM.',env:'Live',url:'https://itsmhelixbbva-smartit.onbmc.com/smartit/app/'},
+  {name:'Documentación Control-M',cat:'documentacion',icon:'📖',desc:'Guías, manuales y tutoriales completos del orquestador Control-M.',env:'Google Sites',url:'#'},
+  {name:'Documentación ADA',cat:'documentacion',icon:'📚',desc:'Arquitectura y documentación técnica de la plataforma ADA.',env:'Platform BBVA',url:'#'},
+  {name:'Documentación DQ-MVP',cat:'documentacion',icon:'📋',desc:'Documentación del proyecto Data Quality MVP.',env:'Google Slides',url:'#'},
+  {name:'Manual Control-M',cat:'documentacion',icon:'📓',desc:'Manual actualizado con los nuevos flujos de Control-M.',env:'Google Drive',url:'#'},
+  {name:'Changelog',cat:'documentacion',icon:'📊',desc:'Registro histórico de cambios y actualizaciones en la plataforma.',env:'Looker Studio',url:'#'},
+  {name:'Mallas Control-M',cat:'documentacion',icon:'🕸️',desc:'Mapa y documentación de las mallas de procesamiento en Control-M.',env:'Google Sheets',url:'#'},
+  {name:'Manual VPN AnyConnect',cat:'documentacion',icon:'🔒',desc:'Guía completa de instalación y uso de la VPN AnyConnect.',env:'Google Drive',url:'#'},
+  {name:'Solicitud Esquemas Live',cat:'formularios',icon:'📝',desc:'Formulario oficial para solicitar el despliegue de nuevos esquemas en Live.',env:'Google Form',url:'#'},
+  {name:'Alta Usuarios',cat:'formularios',icon:'👤',desc:'Solicitud de alta de nuevos usuarios en plataformas DATIO.',env:'Google Form',url:'#'},
+  {name:'Form Despliegue Schemas',cat:'formularios',icon:'🚀',desc:'Solicitud para despliegue de schemas en ambiente productivo.',env:'Google Form',url:'#'},
+  {name:'Form Revisión MSD',cat:'formularios',icon:'🔎',desc:'Formulario para revisión y validación del Master Schema Dictionary.',env:'Google Form',url:'#'},
+  {name:'Helix Tickets',cat:'formularios',icon:'🎟️',desc:'Portal de gestión de tickets y solicitudes de servicio en BMC Helix.',env:'Live',url:'https://itsmhelixbbva-dwp.onbmc.com/dwp/app/'},
+];
+let activeCat='all';
+function renderTools(query=''){
+  const q=(query||document.getElementById('toolSearch')?.value||'').toLowerCase();
+  const filtered=tools.filter(t=>{
+    const mQ=!q||t.name.toLowerCase().includes(q)||t.desc.toLowerCase().includes(q);
+    const mC=activeCat==='all'||t.cat===activeCat;
+    return mQ&&mC;
+  });
+  const grid=document.getElementById('toolsGrid');
+  const empty=document.getElementById('toolsEmpty');
+  if(!filtered.length){grid.innerHTML='';empty.style.display='';return;}
+  empty.style.display='none';
+  grid.innerHTML=filtered.map(t=>`
+    <div class="tool-card">
+      <div class="tool-card-header"><div class="tool-name">${t.name}</div><span class="tool-cat-icon">${t.icon}</span></div>
+      <div class="tool-desc">${t.desc}</div>
+      <div class="tool-footer">
+        <button class="copy-btn" onclick="copyTool('${t.name}')">📋 Copiar link</button>
+        <span class="env-tag">${t.env}</span>
+      </div>
+    </div>`).join('');
+}
+function filterTools(){renderTools();}
+function filterByCategory(el){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');activeCat=el.dataset.cat;renderTools();
+}
+function copyTool(name){
+  const t=tools.find(x=>x.name===name);
+  if(t&&t.url&&t.url!=='#'){navigator.clipboard?.writeText(t.url).catch(()=>{});}
+  showToast(`Link de "${name}" copiado`,'📋');
+}
+
+/* ─── RCN CHALLENGE GAME ─── */
+const RCN_API='https://tim-tionary.ashymushroom-f286a9ee.eastus.azurecontainerapps.io';
+const challenges=[
+  {id:1,emoji:'💳',legacyName:'TIPO_ALERTA_CARTA_CREDITO',legacyDesc:'Código interno que identifica el tipo de notificación enviada cuando una carta de crédito corporativa está próxima a su fecha de vencimiento, según la tabla maestra de alertas del sistema.',hint:'Piensa en: tipo de código + alerta + carta de crédito + vencimiento',demoAnswer:{logicalName:'Tipo de Notificación de Expiración de Carta de Crédito',physicalName:'letter_cr_expir_notc_type_cd',score:0.87,desc:'Código que clasifica el tipo de alerta generada para informar sobre el próximo vencimiento de una carta de crédito vigente en el sistema corporativo.'}},
+  {id:2,emoji:'📊',legacyName:'VAR_CUOTA_MENSUAL',legacyDesc:'Valor numérico que representa la diferencia monetaria entre el monto de la cuota mensual del período actual y la cuota del período anterior para un préstamo vigente.',hint:'Piensa en: variación + monto monetario + cuota + mensual + préstamo',demoAnswer:{logicalName:'Monto de Variación Mensual de Cuota de Préstamo',physicalName:'loan_quota_month_variation_am',score:0.83,desc:'Monto en pesos que refleja la variación de la cuota mensual cobrada al cliente respecto al período anterior, puede ser positivo o negativo.'}},
+  {id:3,emoji:'👤',legacyName:'ID_UNICO_CLIENTE',legacyDesc:'Número único, irrepetible y permanente que identifica a una persona natural o jurídica como cliente dentro del sistema bancario a nivel global. No se reasigna aunque el cliente cierre todos sus productos.',hint:'Piensa en: identificador único + cliente + sistema central',demoAnswer:{logicalName:'Identificador de Cliente',physicalName:'customer_id',score:0.96,desc:'Identificador único del cliente en el sistema central del banco. Clave primaria del objeto CLIENTE. Se asigna en el momento de vinculación y no se reutiliza.'}},
+  {id:4,emoji:'📅',legacyName:'FECHA_PRIMER_DESEMBOLSO',legacyDesc:'Fecha en formato calendario (sin hora) en la que se realizó el primer desembolso de recursos al cliente para un crédito o préstamo específico, registrada en el sistema de originación.',hint:'Piensa en: fecha (sufijo _dt) + primer + desembolso + préstamo',demoAnswer:{logicalName:'Fecha de Primer Desembolso de Préstamo',physicalName:'loan_first_disbursement_dt',score:0.89,desc:'Fecha en que se realizó el primer desembolso del préstamo al cliente. Almacenada en formato DATE. Base para el cálculo de antigüedad del crédito.'}},
+  {id:5,emoji:'📨',legacyName:'IND_AUTORIZA_COMUNICACIONES',legacyDesc:'Indicador booleano que señala si el cliente ha expresado consentimiento explícito para recibir comunicaciones con fines comerciales, publicitarios o de marketing por cualquier canal, según los lineamientos de la ley HABEAS DATA.',hint:'Piensa en: flag/indicador (sufijo _fl) + autorización + comunicaciones + cliente',demoAnswer:{logicalName:'Indicador de Autorización de Comunicaciones Comerciales de Cliente',physicalName:'customer_commercial_comm_auth_fl',score:0.91,desc:'Flag S/N que indica si el cliente autorizó el envío de comunicaciones comerciales. Obligatorio según normativa HABEAS DATA. \'S\'=Autoriza, \'N\'=No autoriza.'}}
+];
+
+const challengeState={initialized:false,idx:0,scores:[],phase:'playing'};
+
+function initChallenge(){
+  challengeState.initialized=true;
+  challengeState.idx=0;challengeState.scores=[];challengeState.phase='playing';
+  updateOrbs();loadChallengeCard(0);
+}
+function updateOrbs(){
+  challenges.forEach((_,i)=>{
+    const orb=document.getElementById('orb-'+i);if(!orb)return;
+    orb.className='progress-orb';
+    if(i<challengeState.scores.length)orb.classList.add('done');
+    else if(i===challengeState.idx)orb.classList.add('active');
+  });
+}
+function loadChallengeCard(idx){
+  const c=challenges[idx];
+  const area=document.getElementById('challengeArea');
+  area.innerHTML=`
+    <div class="challenge-card">
+      <div class="ch-num">DESAFÍO ${c.id} DE ${challenges.length}</div>
+      <div style="font-size:32px;margin-bottom:12px">${c.emoji}</div>
+      <div class="ch-legacy-block">
+        <div class="ch-legacy-tag">Nombre Legacy (sistema origen)</div>
+        <div class="ch-legacy-name">${c.legacyName}</div>
+        <div class="ch-legacy-desc">${c.legacyDesc}</div>
+      </div>
+      <div class="ch-hint">💡 <span>${c.hint}</span></div>
+      <div class="ch-input-label">Tu propuesta de nombre físico en el RCN (ej: customer_id)</div>
+      <input class="ch-input" id="chInput" placeholder="ej: nombre_campo_sufijo" onkeydown="if(event.key==='Enter')submitGuess()"/>
+      <button class="ch-submit" id="chBtn" onclick="submitGuess()">
+        <span id="chBtnIcon">🎯</span>
+        <span id="chBtnTxt">Validar en el RCN</span>
+      </button>
+    </div>`;
+  document.getElementById('chInput').focus();
+}
+
+async function submitGuess(){
+  const userGuess=(document.getElementById('chInput')?.value||'').trim();
+  if(!userGuess){showToast('Escribe tu propuesta de nombre físico','⚠️');return;}
+  const btn=document.getElementById('chBtn');
+  if(btn)btn.disabled=true;
+  document.getElementById('chBtnIcon').innerHTML='<span class="spin"></span>';
+  document.getElementById('chBtnTxt').textContent='Consultando RCN…';
+  const c=challenges[challengeState.idx];
+  let apiResult=null,isDemo=false;
+  try{
+    const body={text:c.legacyDesc,limit:3,threshold:0.5,vector_name:'lname_sp',collection:'rcn_semantic_collection_v2',rank_mode:'hybrid'};
+    const res=await fetch(RCN_API+'/api/search_text',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(8000)});
+    if(res.ok){const data=await res.json();if(data&&data.length)apiResult=data[0];}
+  }catch(e){/* CORS or timeout → use demo data */}
+  if(!apiResult){
+    isDemo=true;
+    apiResult={score:c.demoAnswer.score,payload:{'LOGICAL NAME FIELD (SP)':c.demoAnswer.logicalName,'PHYSICAL NAME FIELD':c.demoAnswer.physicalName,'FIELD DESCRIPTION (SP)':c.demoAnswer.desc}};
+  }
+  const physName=apiResult.payload?.['PHYSICAL NAME FIELD']||apiResult.payload?.['PHYSICAL_NAME_FIELD']||'';
+  const logName=apiResult.payload?.['LOGICAL NAME FIELD (SP)']||apiResult.payload?.['LOGICAL_NAME_FIELD_SP']||'';
+  const descField=apiResult.payload?.['FIELD DESCRIPTION (SP)']||apiResult.payload?.['FIELD_DESCRIPTION_SP']||'';
+  const apiScore=Math.round((apiResult.score||0)*100);
+  const guessScore=calcGuessScore(userGuess,physName);
+  const total=Math.min(100,Math.round(apiScore*0.65+guessScore*0.35));
+  challengeState.scores.push(total);
+  updateOrbs();
+  showChallengeResult(c,userGuess,physName,logName,descField,apiScore,guessScore,total,isDemo);
+}
+
+function calcGuessScore(guess,physName){
+  if(!guess||!physName)return 0;
+  const g=guess.toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const p=physName.toLowerCase();
+  if(g===p)return 100;
+  if(p.includes(g)||g.includes(p))return 85;
+  const gW=g.split('_').filter(w=>w.length>2);
+  const pW=p.split('_').filter(w=>w.length>2);
+  const matches=gW.filter(w=>pW.some(pw=>pw.includes(w)||w.includes(pw)));
+  if(matches.length>=3)return 75;
+  if(matches.length>=2)return 50;
+  if(matches.length>=1)return 25;
+  return 0;
+}
+
+function showChallengeResult(c,userGuess,physName,logName,descField,apiScore,guessScore,total,isDemo){
+  const stars=total>=90?'⭐⭐⭐⭐⭐':total>=75?'⭐⭐⭐⭐':total>=60?'⭐⭐⭐':total>=40?'⭐⭐':'⭐';
+  const verdict=total>=90?'¡Perfecto! Conoces muy bien el RCN':total>=75?'¡Excelente! Muy cerca del nombre oficial':total>=60?'¡Bien! Capturaste el concepto central':total>=40?'Regular · El concepto era similar pero el formato difiere':'Sigue intentando · La descripción era compleja';
+  const pctClass=total>=70?'great':total>=45?'good':'low';
+  const isLast=challengeState.idx>=challenges.length-1;
+  const area=document.getElementById('challengeArea');
+  area.innerHTML=`
+    <div class="ch-result">
+      <div class="result-score-center">
+        <div class="result-stars">${stars}</div>
+        <div class="result-pct ${pctClass}">${total}%</div>
+        <div class="result-verdict">${verdict}</div>
+      </div>
+      <div class="result-table">
+        <div class="rtable-row"><span class="rtable-label">TU PROPUESTA</span><span class="rtable-val user-guess">${userGuess||'—'}</span></div>
+        <div class="rtable-row"><span class="rtable-label">NOMBRE OFICIAL RCN</span><span class="rtable-val">${physName||'N/D'}</span></div>
+        <div class="rtable-row"><span class="rtable-label">NOMBRE LÓGICO</span><span class="rtable-val" style="font-family:inherit;font-size:12px">${logName||'—'}</span></div>
+        <div class="rtable-row"><span class="rtable-label">SIMILITUD API</span><span class="rtable-val">${apiScore}%</span></div>
+        <div class="rtable-row"><span class="rtable-label">ACIERTO NAMING</span><span class="rtable-val">${guessScore}%</span></div>
+      </div>
+      ${descField?`<div style="background:var(--bg-3);border-radius:8px;padding:12px 14px;font-size:12.5px;color:var(--text-2);line-height:1.6;margin-bottom:12px"><strong style="color:var(--text-3);font-size:10px;letter-spacing:.08em">DESCRIPCIÓN OFICIAL · </strong>${descField}</div>`:''}
+      ${isDemo?`<div class="demo-note">ℹ️ Modo demo activado (API no disponible) · Los resultados son aproximados basados en datos de referencia TIMIA</div>`:''}
+      ${!isLast?`<button class="ch-next-btn" onclick="nextChallenge()">Siguiente desafío →</button>`:`<button class="ch-next-btn" style="background:linear-gradient(135deg,var(--accent),var(--cyan));color:white;border-color:transparent" onclick="showFinalScore()">Ver puntaje final 🏆</button>`}
+    </div>`;
+}
+
+function nextChallenge(){
+  challengeState.idx++;
+  challengeState.phase='playing';
+  loadChallengeCard(challengeState.idx);
+}
+
+function showFinalScore(){
+  const scores=challengeState.scores;
+  const avg=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+  const grade=avg>=90?'🏆 Experto RCN':avg>=75?'🥇 Avanzado':avg>=60?'🥈 Intermedio':avg>=40?'🥉 Principiante':'📚 Sigue practicando';
+  const sub=avg>=75?'Tienes un excelente dominio del Repositorio Central de Nombres. ¡El equipo de gobierno te necesita!':avg>=50?'Buen conocimiento. Revisa el catálogo de sufijos TC-015 para mejorar.':'Te recomendamos revisar las Buenas Prácticas y el catálogo de sufijos.';
+  document.getElementById('challengeArea').innerHTML=`
+    <div class="final-screen">
+      <div class="final-emoji">${avg>=75?'🏆':avg>=50?'🎯':'📚'}</div>
+      <div class="final-score-big">${avg}%</div>
+      <div class="final-grade">${grade}</div>
+      <div class="final-sub">${sub}</div>
+      <div class="final-details">
+        ${scores.map((s,i)=>`<div class="final-orb"><div class="final-orb-val">${s}%</div><div class="final-orb-label">Desafío ${i+1}</div></div>`).join('')}
+      </div>
+      <button class="final-replay" onclick="restartChallenge()">🔄 Jugar de nuevo</button>
+    </div>`;
+  updateOrbs();
+}
+
+function restartChallenge(){
+  challengeState.idx=0;challengeState.scores=[];challengeState.phase='playing';
+  updateOrbs();loadChallengeCard(0);
+}
+
+/* ─── CHAT ─── */
+const kb=[
+  {t:['diccionario','pre-dic','prediccionario'],r:`📚 El <strong>Pre-Diccionario</strong> es el documento previo al Diccionario oficial. Flujo:<br>1️⃣ Dominio propone → 2️⃣ Gobierno revisa → 3️⃣ Si aprueba → <strong>Diccionario</strong><br><br>👉 <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('flujos',null);toggleChat()">Ver Flujos de Gobierno</span>`},
+  {t:['rcn','buscador','semantico','legazy','legacy','busqueda','desafio','desafío','reto','juego'],r:`🎯 El <strong>Desafío RCN</strong> es un reto de 5 rondas donde TIMIA te da una descripción legacy y tú debes adivinar el nombre físico del campo en el RCN.<br><br>El motor semántico LaBSE (IA) valida tu respuesta con un porcentaje de acierto. Si la API no está disponible, activa el modo demo con datos de referencia.<br><br>👉 <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('ejercicios',null);toggleChat()">Ir al Desafío</span>`},
+  {t:['sufijo','sufijos','tc-015','tc015','nomenclatura'],r:`🏷️ Sufijos TC-015 clave:<br><code style="background:rgba(124,111,247,.2);padding:2px 6px;border-radius:4px">_id</code> Identificador · <code style="background:rgba(124,111,247,.2);padding:2px 6px;border-radius:4px">_nm</code> Nombre · <code style="background:rgba(124,111,247,.2);padding:2px 6px;border-radius:4px">_dt</code> Fecha · <code style="background:rgba(124,111,247,.2);padding:2px 6px;border-radius:4px">_am</code> Monto · <code style="background:rgba(124,111,247,.2);padding:2px 6px;border-radius:4px">_fl</code> Flag<br><br>👉 <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('practicas',null);toggleChat()">Ver catálogo completo</span>`},
+  {t:['control-m','controlm','malla'],r:`⏱️ <strong>Control-M</strong> es el orquestador de jobs batch.<br><br>👉 <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('herramientas',null);toggleChat()">Ir a Herramientas</span> y busca "Control-M"`},
+  {t:['datum','catalogo','taxonomy'],r:`🗂️ <strong>DATUM</strong> es la plataforma central del catálogo de datos. Verifica ahí si el campo existe antes de proponer un Pre-Diccionario.<br><br>👉 <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('herramientas',null);toggleChat()">Ir a Herramientas</span>`},
+  {t:['sdm','modelo','single data'],r:`🏗️ El <strong>Modelo SDM</strong> es el marco unificado de gobernanza. Incluye 3 Dominios Funcionales, 4 PHs y foros ejecutivos.<br><br>👉 <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('modelo',null);toggleChat()">Ver Modelo SDM</span>`},
+  {t:['flujo','flujos','informacional','operacional'],r:`⇌ Hay <strong>2 flujos de gobierno iterativos</strong>:<br>📘 <strong>1.1 Informacional</strong>: objetos → Pre-Dic → Gobierno → ADA<br>📗 <strong>1.2 Operacional</strong>: sesión → revisión → cierre → go-live<br><br>Los pasos pueden retroalimentarse.<br><br>👉 <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('flujos',null);toggleChat()">Ver flujos</span>`},
+  {t:['ada','datio','plataforma'],r:`🚀 <strong>ADA</strong> es la plataforma de datos analíticos donde se consumen los datos gobernados.<br><br>👉 <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('herramientas',null);toggleChat()">Ver herramientas</span>`},
+  {t:['contacto','alfonso','juan pablo','gobierno','lider','buzón','correo'],r:`📧 Los contactos del proceso de gobierno son:<br><br>👨‍💼 <strong>Alfonso Portillo</strong> · Líder Técnico Banco<br>👨‍🔬 <strong>Juan Pablo Arévalo</strong> · Líder TIMIA<br>📬 <strong>Buzón de Gobierno</strong> · Dirección de Gobierno del Dato<br><br>Puedes verlos haciendo clic en cualquier paso en los <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('flujos',null);toggleChat()">Flujos de Gobierno</span>.`},
+  {t:['hola','hello','buenos','buenas'],r:`¡Hola! 👋 Puedo ayudarte con:<br>🎯 Desafío Semántico RCN<br>🔧 Herramientas y links<br>📋 Nomenclatura TC-015<br>⇌ Flujos de gobierno con condicionales`},
+  {t:['gracias','perfecto','excelente'],r:`¡De nada! 😊 Cualquier otra duda aquí estoy.`},
+];
+function getResponse(msg){
+  const l=msg.toLowerCase();
+  for(const e of kb){if(e.t.some(t=>l.includes(t)))return e.r;}
+  return `🤔 No encontré info exacta sobre <em>"${msg}"</em>.<br><br>🔍 <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('ejercicios',null);toggleChat()">Buscador RCN</span> · 🔧 <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('herramientas',null);toggleChat()">Herramientas</span> · 📋 <span style="color:var(--accent-2);cursor:pointer" onclick="navigate('practicas',null);toggleChat()">Buenas Prácticas</span>`;
+}
+function toggleChat(){document.getElementById('chatPanel').classList.toggle('open');document.getElementById('chatToggleBtn').classList.toggle('open');}
+function sendMessage(){
+  const i=document.getElementById('chatInput');const t=i.value.trim();if(!t)return;
+  appendMessage('user',t);i.value='';i.style.height='';
+  document.getElementById('chatSuggestions').style.display='none';
+  showTyping();
+  setTimeout(()=>{removeTyping();appendMessage('bot',getResponse(t));scrollChat();},900+Math.random()*400);
+}
+function sendSuggestion(el){document.getElementById('chatInput').value=el.textContent;sendMessage();}
+function askBotAbout(t){if(!document.getElementById('chatPanel').classList.contains('open'))toggleChat();document.getElementById('chatInput').value=t;sendMessage();}
+function appendMessage(from,html){
+  const msgs=document.getElementById('chatMessages');
+  const d=document.createElement('div');d.className='msg '+from;
+  d.innerHTML=`${from==='bot'?'<span class="msg-icon">🤖</span>':''}<div class="msg-bubble">${html}</div>${from==='user'?'<span class="msg-icon">👤</span>':''}`;
+  msgs.appendChild(d);scrollChat();
+}
+let typingEl=null;
+function showTyping(){const m=document.getElementById('chatMessages');typingEl=document.createElement('div');typingEl.className='msg bot';typingEl.innerHTML='<span class="msg-icon">🤖</span><div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>';m.appendChild(typingEl);scrollChat();}
+function removeTyping(){typingEl?.remove();}
+function scrollChat(){const m=document.getElementById('chatMessages');setTimeout(()=>m.scrollTop=m.scrollHeight,50);}
+function autoGrow(el){el.style.height='';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+
+/* ─── TOAST ─── */
+function showToast(text,icon='✅'){
+  const t=document.getElementById('toast');
+  document.getElementById('toastText').textContent=text;
+  document.getElementById('toastIcon').textContent=icon;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+/* INIT */
+renderTools();
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeStep();});
+// Auto-init challenge if already on that page
+if(document.getElementById('page-ejercicios').classList.contains('active'))initChallenge();
+</script>
+</body>
+</html>
